@@ -1,0 +1,29 @@
+Package: camTS
+Title: Create Time Series Plot of Image Data
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Kaitlyn",
+           family = "Strickfaden",
+           role = c("aut", "cre"),
+           email = "kaitlyn.strickfaden@gmail.com",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: The Shiny app generates a time series plot from input data. 
+             Then, the user can click on points in the time series to see 
+             the associated image. The package also includes some helper functions
+             for data-cleaning.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports:
+    dplyr,
+    exiftoolr,
+    lubridate,
+    stringr
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+Suggests: 
+    knitr,
+    qpdf,
+    rmarkdown
+VignetteBuilder: knitr
+
