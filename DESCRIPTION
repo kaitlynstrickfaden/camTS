@@ -18,7 +18,8 @@ Imports:
     dplyr,
     exiftoolr,
     lubridate,
-    stringr
+    stringr,
+    tidyverse
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Suggests: 

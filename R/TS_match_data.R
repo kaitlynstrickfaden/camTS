@@ -6,13 +6,13 @@
 #'
 #' @import dplyr
 #' @import lubridate
-#' @param dataset1 a data frame object containing a column called "Datetime".
-#' @param dataset2 another data frame containing a column called "Datetime". Some data from this dataset may get lost.
+#' @param dataset1 a data frame object containing a column called "Datetime". Datetime column must contain POSIXct date-time objects.
+#' @param dataset2 another data frame containing a column called "Datetime". Datetime column must contain POSIXct date-time objects. Some data from this dataset may get lost.
 #' @return A new data frame with dataset1 and dataset2 merged together.
 #' @export
 
 
-match_data <- function(dataset1, dataset2) {
+TS_match_data <- function(dataset1, dataset2) {
 
   
   nearest <- function(d1, d2, ends=c(-Inf,Inf)) {
@@ -57,7 +57,6 @@ match_data <- function(dataset1, dataset2) {
     
   
 }
-
 
 
   

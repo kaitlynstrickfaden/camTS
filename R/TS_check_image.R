@@ -11,7 +11,7 @@
 
 
 
-image_check <- function(f) {
+TS_check_image <- function(f) {
   
   paths <- c("jpg", "jpeg", "png", "tif", "tiff", "gif")
   checked <- c()
