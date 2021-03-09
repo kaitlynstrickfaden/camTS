@@ -6,7 +6,7 @@
 \usage{
 TS_extract_meta(
   ims,
-  tags = c("FileName", "UserLabel", "DatetimeOriginal", "TriggerMode", "MoonPhase",
+  tags = c("SourceFile", "UserLabel", "DatetimeOriginal", "TriggerMode", "MoonPhase",
     "AmbientTemperatureFahrenheit", "AmbientTemperature", "SceneCaptureType")
 )
 }
@@ -16,7 +16,7 @@ TS_extract_meta(
 \item{tags}{a vector containing the data columns you want to extract. To see the list of available tags, go to https://exiftool.org/TagNames/}
 }
 \value{
-A new data frame with dataset1 and dataset2 merged together.
+a data frame of image metadata.
 }
 \description{
 Extracts metadata from images.

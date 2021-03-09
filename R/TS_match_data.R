@@ -6,18 +6,19 @@
 #'
 #' @import dplyr
 #' @import lubridate
-#' @param dataset1 a data frame object containing a column called "Datetime". Datetime column must contain POSIXct date-time objects.
-#' @param dataset2 another data frame containing a column called "Datetime". Datetime column must contain POSIXct date-time objects. Some data from this dataset may get lost.
-#' @return A new data frame with dataset1 and dataset2 merged together.
+#' @param dataset a data frame object containing a column called "Datetime". Datetime column must contain POSIXct date-time objects.
+#' @param imagedata a data frame containing image metadata. Must have a column called "Datetime" containing POSIXct date-time objects and a column called "TriggerMode" with camera trigger mode as character objects (see TS_extract_meta.R).
+#' @return A new data frame with dataset and imagedata merged together.
 #' @export
 
 
-TS_match_data <- function(dataset1, dataset2) {
+TS_match_data <- function(dataset, imagedata) {
 
   
   nearest <- function(d1, d2, ends=c(-Inf,Inf)) {
     #
     # Both `d1` and `d2` must be vectors of numbers in ascending order.
+    # Returns a vector of indices
     #
     glb <- function(u, v) {
       n <- length(v)
@@ -42,21 +43,46 @@ TS_match_data <- function(dataset1, dataset2) {
   
   ##### 
   
+  timelapse <- imagedata[imagedata$TriggerMode != "M",]
+  motion <- imagedata[imagedata$TriggerMode == "M",]
   
-  d1 <- as.numeric(dataset1$Datetime, format = "%Y-%m-%d %H:%M:%OS")
-  colnames(dataset1)[which(colnames(dataset1) == "Datetime")] <- "Datetime_d1"
+  d <- as.numeric(dataset$Datetime, format = "%Y-%m-%d %H:%M:%OS")
+  dataset$Index2 <- c(1:nrow(dataset))
   
-  d2 <- as.numeric(dataset2$Datetime, format = "%Y-%m-%d %H:%M:%OS")
-  colnames(dataset2)[which(colnames(dataset2) == "Datetime")] <- "Datetime_d2"
-  dataset2$Index <- c(1:nrow(dataset2))
+  tl <- as.numeric(timelapse$Datetime, format = "%Y-%m-%d %H:%M:%OS")
+  colnames(timelapse)[which(colnames(timelapse) == "Datetime")] <- "Image_Datetime"
+  timelapse$Index1 <- c(1:nrow(timelapse))
   
+  mt <- as.numeric(motion$Datetime, format = "%Y-%m-%d %H:%M:%OS")
+  colnames(motion)[which(colnames(motion) == "Datetime")] <- "Image_Datetime"
+  
+  dataset$Index1 <- nearest(d, tl) 
+  motion$Index2 <- nearest(mt, d)
     
-  dataset1$Index <- nearest(d1, d2) # returns a vector of indices
-    
-  return(left_join(dataset1, dataset2, by = c("Index")))
+  timelapse_join <- inner_join(dataset, timelapse, by = c("Index1"))
+  motion_join <- inner_join(dataset, motion, by = c("Index2"))
+  
+  joined <- rbind(timelapse_join, motion_join)
+  joined <- select(joined, !c("Index1", "Index2"))
+  joined <- arrange(joined, "Image_Datetime")
+  
+  return(joined)
     
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   

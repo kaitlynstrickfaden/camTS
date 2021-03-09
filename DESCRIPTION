@@ -17,7 +17,13 @@ LazyData: true
 Imports:
     dplyr,
     exiftoolr,
+    htmltools,
+    htmlwidgets,
     lubridate,
+    plotly,
+    shiny,
+    shinydashboard,
+    shinythemes,
     stringr,
     tidyverse
 Roxygen: list(markdown = TRUE)

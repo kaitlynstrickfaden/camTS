@@ -9,11 +9,11 @@
 #' @import tidyverse
 #' @param ims a vector containing file paths to images.
 #' @param tags a vector containing the data columns you want to extract. To see the list of available tags, go to https://exiftool.org/TagNames/
-#' @return A new data frame with dataset1 and dataset2 merged together.
+#' @return a data frame of image metadata.
 #' @export
 
 
-TS_extract_meta <- function(ims, tags = c("FileName", "UserLabel", "DatetimeOriginal", "TriggerMode", "MoonPhase", "AmbientTemperatureFahrenheit", "AmbientTemperature", "SceneCaptureType")) {
+TS_extract_meta <- function(ims, tags = c("SourceFile", "UserLabel", "DatetimeOriginal", "TriggerMode", "MoonPhase", "AmbientTemperatureFahrenheit", "AmbientTemperature", "SceneCaptureType")) {
   
   im <- ims[TS_check_image(ims) == TRUE]
   
