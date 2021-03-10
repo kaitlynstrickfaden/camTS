@@ -13,12 +13,12 @@
 #' @export
 
 
-TS_extract_meta <- function(ims, tags = c("SourceFile", "UserLabel", "DatetimeOriginal", "TriggerMode", "MoonPhase", "AmbientTemperatureFahrenheit", "AmbientTemperature", "SceneCaptureType")) {
+TS_extract_meta <- function(ims, tags = c("FileName", "UserLabel", "DatetimeOriginal", "TriggerMode", "MoonPhase", "AmbientTemperatureFahrenheit", "AmbientTemperature", "SceneCaptureType")) {
   
   im <- ims[TS_check_image(ims) == TRUE]
   
   if (length(ims) != length(im)) {
-    warning("Some of your input files were not images. Only metadata from the image files was extracted.")
+    warning("Some of your input files were not images. Only metadata from the image files were extracted.")
   }
   
   m <- exif_read(im, pipeline = "csv", tags = tags)
@@ -28,29 +28,29 @@ TS_extract_meta <- function(ims, tags = c("SourceFile", "UserLabel", "DatetimeOr
   
   
   if ("MoonPhase" %in% colnames(m)) {
-    m <- mutate(m, MoonPhase = case_when(
-        MoonPhase == 0 ~ "New",
-        MoonPhase == 1 ~ "New Crescent",
-        MoonPhase == 2 ~ "First Quarter",
-        MoonPhase == 3 ~ "Waxing Gibbous",
-        MoonPhase == 4 ~ "Full",
-        MoonPhase == 5 ~ "Waning Gibbous",
-        MoonPhase == 6 ~ "Last Quarter",
+    m$MoonPhase <- case_when(
+        m$MoonPhase == 0 ~ "New",
+        m$MoonPhase == 1 ~ "New Crescent",
+        m$MoonPhase == 2 ~ "First Quarter",
+        m$MoonPhase == 3 ~ "Waxing Gibbous",
+        m$MoonPhase == 4 ~ "Full",
+        m$MoonPhase == 5 ~ "Waning Gibbous",
+        m$MoonPhase == 6 ~ "Last Quarter",
         TRUE ~ "Old Crescent"
-        
-      ))
+      )
+    
   }
   
   
   if ("SceneCaptureType" %in% colnames(m)) {
-    m <- mutate(m, SceneCaptureType = case_when(
-        SceneCaptureType == 0 ~ "Standard",
-        SceneCaptureType == 1 ~ "Landscape",
-        SceneCaptureType == 2 ~ "Portrait",
-        SceneCaptureType == 3 ~ "Night",
+    m$SceneCaptureType = case_when(
+        m$SceneCaptureType == 0 ~ "Standard",
+        m$SceneCaptureType == 1 ~ "Landscape",
+        m$SceneCaptureType == 2 ~ "Portrait",
+        m$SceneCaptureType == 3 ~ "Night",
         TRUE ~ "Other"
-        
-      ))
+      )
+    
   }
   
   return(m)
