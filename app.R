@@ -118,7 +118,7 @@ library(htmlwidgets)
                       
                       plotlyOutput("clickplot"), # Time series plot
                       
-                      plotlyOutput("densplot", height = "150px")
+                      plotOutput("densplot", height = "150px")
                       
                     ) # end mainPanel
                     
@@ -183,7 +183,7 @@ library(htmlwidgets)
       #myImages <- myImages[!str_ends(myImages, ".csv")]
       
       # Read in and clean up the data
-      dat <- read_csv(d, col_types = list( "TriggerMode" = col_character()))
+      dat <- read_csv(d, col_types = list("TriggerMode" = col_character(), "Datetime" = col_datetime()))
       dat <- dat %>%
         mutate(Stage = case_when(Stage > 0 ~ Stage, TRUE ~ 0),
                Datetime = ymd_hms(Datetime),
@@ -324,7 +324,7 @@ library(htmlwidgets)
     
     ############ Render plot of image occurrence #################### 
     
-    output$densplot <- renderPlotly({
+    output$densplot <- renderPlot({
       
       # if (is.null(input$fdir)) {
       #   return(NULL)
@@ -343,34 +343,23 @@ library(htmlwidgets)
       #myImages <- myImages[!str_ends(myImages, ".csv")]
       
       # Read in and clean up the data
-      dat <- read_csv(d, col_types = list("TriggerMode" = col_character()))
+
+      dat <- read_csv(d)
       dat <- dat %>%
-        mutate(Datetime = ymd_hms(Datetime)
+        select(FileName, Image_Datetime) %>%
+        distinct() %>%
+        mutate(Datetime = ymd_hms(Image_Datetime),
+               Date = as_date(Datetime),
+               Hour = hour(Datetime)
         ) %>%
-        arrange(Datetime)
+        group_by(Date, Hour) %>%
+        count()
       
-      #dens <- dat %>%
-        #mutate(TriggerMode = as.factor(TriggerMode))
-      
-      
-      plot_ly(
-        dat,
-        x         = ~ Datetime,
-        y         = ~ TriggerMode,
-        type      = 'scattergl',
-        mode      = 'markers',
-        marker = list(
-          symbol = "line-ns",
-          size = 2
-        ),
-        name = "Image Density",
-        transforms = list(
-          list(
-            type = 'groupby',
-            groups = dat$TriggerMode
-          )
-        )
-      )
+      ggplot(dat) +
+        geom_tile(aes(x = Date, y = Hour, fill = n)) +
+        ylim(0,24) +
+        scale_fill_gradient(name = "# of\nImages") +
+        theme_minimal()
       
     }) # End of densplot renderPlotly
     
