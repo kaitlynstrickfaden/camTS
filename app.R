@@ -69,10 +69,10 @@ library(htmlwidgets)
                       # CSV's of data to the "www" folder in the app folder.
                       # The display name will be the folder name.
                       
-                      selectInput(inputId = "site",
+                      checkboxGroupInput(inputId = "site",
                                   label = "Site",
                                   choices = list.files("www"),
-                                  selected = "TW",
+                                  selected = c("TE", "TW"),
                                   width = "50%"
                       ),
                       
@@ -90,9 +90,15 @@ library(htmlwidgets)
                       ),
                       
                       
+                      # Input: Decide if only daytime images should be rendered in side panel
                       
                       checkboxInput(inputId = "dayonly",
                                     label = "Daytime images only?",
+                                    value = FALSE
+                      ),
+                      
+                      checkboxInput(inputId = "matchonly",
+                                    label = "Only show exact images?",
                                     value = FALSE
                       ),
                       
@@ -100,8 +106,9 @@ library(htmlwidgets)
                       ## Sidebar Panel Outputs: ---------------
                       
                       textOutput("text1"), # Date and time
-                      textOutput("text2"), # Y value at click
-                      textOutput("text3"), # Image file path
+                      textOutput("text2"), # Stream Stage value
+                      textOutput("text3"), # Secondary y axis value
+                      textOutput("text4"), # Image file path
                       
                       imageOutput("image"), # Image
   
@@ -132,6 +139,7 @@ library(htmlwidgets)
   
   
   server <- function(input, output, session) {
+    
     
     ################ Choose the directory ###################
     
@@ -171,37 +179,59 @@ library(htmlwidgets)
       #   return(NULL)
       # }
       
-      # Find files corresponding to selected site
-      myImages <- str_c("www", input$site, 
-                        list.files(str_c("www", input$site, sep = "/")), 
-                        sep = "/" )
+      # Make an empty tibble for storing data from selected sites
+      dat <- tibble()
       
-      # Find csv file in wd
-      d <- myImages[str_ends(myImages, ".csv")]
+      for (i in seq_along(input$site)) {
       
-      # Find images in wd
-      #myImages <- myImages[!str_ends(myImages, ".csv")]
-      
-      # Read in and clean up the data
-      dat <- read_csv(d, col_types = list("TriggerMode" = col_character(), "Datetime" = col_datetime()))
-      dat <- dat %>%
-        mutate(Stage = case_when(Stage > 0 ~ Stage, TRUE ~ 0),
-               Datetime = ymd_hms(Datetime),
-               image_url = SourceFile) %>%
-        arrange(Datetime)
-      
-      if (input$dayonly == TRUE) {
+        # Find files corresponding to a site
+        myImages <- str_c("www", input$site[i], 
+                          list.files(str_c("www", input$site[i], sep = "/")), 
+                          sep = "/" )
         
-        dat <- dat %>%
-          mutate(image_url = case_when(
-            SceneCaptureType == "Night" ~ str_c(image_url, "(nighttime image)", sep = " "),
-            TRUE ~ image_url)
-          )
+        # Find csv file in wd
+        d <- myImages[str_ends(myImages, ".csv")]
+        
+        # Read in and clean up the data
+        d1 <- read_csv(d, col_types = list("TriggerMode" = col_character(), 
+                                            "Datetime" = col_datetime()))
+        d1 <- d1 %>%
+          mutate(Stage = case_when(Stage > 0 ~ Stage, TRUE ~ 0),
+                 Datetime = ymd_hms(Datetime),
+                 image_url = SourceFile) %>%
+          arrange(Datetime)
+        
+        
+        # Rename nighttime photos so they do not render
+        # Probably needs a neater solution - this throws errors in the R console
+        
+        # if (input$dayonly == TRUE) {
+        #   d1 <- d1 %>%
+        #     mutate(TimeofDay = case_when(
+        #       SceneCaptureType == "Night" ~ "Night",
+        #       TRUE ~ "Day")
+        #     )
+        # }
+        # 
+        # if (input$matchonly == TRUE) {
+        #   d1 <- d1 %>%
+        #     mutate(DTMatch = case_when(
+        #       as.numeric(Datetime) == as.numeric(Image_Datetime) ~ "Yes",
+        #       TRUE ~ "No")
+        #     )
+        # }
+        
+        
+        # Bind these to the compiled tibble
+        dat <- rbind(dat, d1)
+      
         
       }
       
+      
+      # Lets you highlight the click event
       hdat <- highlight_key(dat, ~Datetime)
-      # lets you highlight the click event
+
       
      
       
@@ -225,36 +255,34 @@ library(htmlwidgets)
         hdat,
         x         = ~ Datetime,
         y         = ~ Stage,
+        color     = ~ UserLabel,
+        colors    = "Set1",
         type      = 'scattergl',
         mode      = 'lines+markers',
-        marker = list(
-          color = 'rgb(0, 0, 0)'
-          ),
-        line = list(
-          color = 'rbg(0,0,0)'
-        ),
-        name = "Stream Stage (m)",
+        #name = str_glue(input$site, "Stream Stage (m)"),
         hoverinfo = 'y',
         source = "hoverplotsource",
-        customdata = ~ image_url
+        customdata = ~ UserLabel
       ) %>%
         
         # Second y axis
-        add_trace(x = dat$Datetime, y = ~data(), yaxis = "y2",
-                  name = input$secondy, mode = 'lines+markers', 
-                  marker = list(
-                    color = 'rgb(0,0,255)',
-                    size = 6,
-                    symbol = "triangle-up"
-                  ),
-                  line = list(
-                    color = 'rbg(0,0,255)',
-                    width = 1
-                  )
+        add_trace(
+          x = dat$Datetime, 
+          y = ~ data(), 
+          color = ~ UserLabel,
+          colors = "Set1",
+          yaxis = "y2",
+          name = input$secondy, 
+          mode = 'lines+markers', 
+          marker = list(
+            symbol = "triangle-up",
+            size = 6
+          )
                   ) %>%
         
+        # Extra plot customization
         layout(
-          title = str_glue("Time series for {input$site}"),
+          title = paste0("Time series for ", str_flatten(input$site, collapse = ", ")),
           xaxis = list(
             title = "Datetime"
           ),
@@ -266,14 +294,19 @@ library(htmlwidgets)
             overlaying = "y",
             side = "right",
             title = str_glue("{input$secondy}")
+          ),
+          legend = list(
+            font = list(size = 8)
           )
           ) %>%
+      
         
         event_register('plotly_click') %>% # lets you click points
         
-        # highlights the clicked point
+        # Changes the color of the clicked point
         highlight("plotly_click", off = "plotly_doubleclick",
-                  color = toRGB("red"), opacityDim = 1)
+                  color = toRGB("black"), opacityDim = 1,
+                  selected = attrs_selected(showlegend = FALSE))
   
       
     }) # End of clickplot renderPlotly
@@ -293,27 +326,126 @@ library(htmlwidgets)
     observeEvent(click_event(), {
       
       
+      dat <- tibble()
+      
+      for (i in seq_along(input$site)) {
+        
+        # Find files corresponding to a site
+        myImages <- str_c("www", input$site[i], 
+                          list.files(str_c("www", input$site[i], sep = "/")), 
+                          sep = "/" )
+        
+        # Find csv file in wd
+        d <- myImages[str_ends(myImages, ".csv")]
+        
+        # Read in and clean up the data
+        d1 <- read_csv(d, col_types = list("TriggerMode" = col_character(), 
+                                           "Datetime" = col_datetime()))
+        d1 <- d1 %>%
+          mutate(Stage = case_when(Stage > 0 ~ Stage, TRUE ~ 0),
+                 Datetime = ymd_hms(Datetime),
+                 TimeofDay = "Day",
+                 DTMatch = "Yes",
+                 image_url = SourceFile) %>%
+          arrange(Datetime)
+        
+        
+        # Allow for only showing certain images
+        
+        if (input$dayonly == TRUE) {
+          d1 <- d1 %>%
+            mutate(TimeofDay = case_when(
+              SceneCaptureType == "Night" ~ "Night",
+              TRUE ~ "Day")
+            )
+        }
+        
+        if (input$matchonly == TRUE) {
+          d1 <- d1 %>%
+            mutate(DTMatch = case_when(
+              as.numeric(Datetime) == as.numeric(Image_Datetime) ~ "Yes",
+              TRUE ~ "No")
+            )
+        }
+        
+        
+        # Bind site data to the compiled tibble
+        dat <- rbind(dat, d1)
+        
+      }
+      
+      
+      dat <- dat %>%
+        filter(Datetime == click_event()$x & UserLabel == click_event()$customdata)
+      
+      
       # Write the datetime, response variable value, and image file path in sidebar
       output$text1 <- renderText(
-        str_glue("Date and Time: ", as.character(click_event()$x), sep = " ")
+        str_glue("Date and Time: ", as.character(dat$Datetime), sep = " ")
       )
       
       output$text2 <- renderText(
-        str_glue("Y value at click: ", as.character(click_event()$y), sep = " ")
+        str_glue("Stream Stage: ", as.character(dat$Stage), " m", sep = " ")
       )
       
+      #"None", "Turbidity (NTU)", "Temperature (°C)"
+      if (input$secondy == "None") {
       output$text3 <- renderText(
-        str_glue("Image Path: ", as.character(click_event()$customdata), sep = " ")
+        str_glue("No secondary y axis value")
       )
+      }
+      if (input$secondy == "Turbidity (NTU)") {
+        output$text3 <- renderText(
+          str_glue("Turbidity: ", as.character(dat$WT), " NTU", sep = " ")
+        )
+      }
+      if (input$secondy == "Temperature (°C)") {
+        output$text3 <- renderText(
+          str_glue("Stream Temperature: ", as.character(dat$TW), " °C", sep = " ")
+        )
+      }
+      
+      output$text4 <- renderText(
+        str_glue("Image Path: ", as.character(dat$SourceFile), sep = " ")
+      )
+      
       
       # Draw the corresponding image in the sidebar
-      output$image <- renderImage({
-        filename <- normalizePath(file.path(
-          click_event()$customdata))
-        list(src = filename,
-             width  = session$clientData$output_image_width,
-             height = session$clientData$output_image_height)}, 
-        deleteFile = FALSE)
+      # Change to renderPlot with rasterGrob to display multiple images
+      
+      if (input$dayonly == TRUE & dat$TimeofDay == "Night") {
+        output$image <- renderImage({list(src = "NA")}, deleteFile = FALSE)
+        output$text4 <- renderText(
+          str_glue("Image Path: ", 
+                   as.character(dat$SourceFile), 
+                   " (nighttime image)", sep = " ")
+        )
+      } else if (input$matchonly == TRUE & dat$DTMatch == "No") {
+        output$image <- renderImage({list(src = "NA")}, deleteFile = FALSE)
+        output$text4 <- renderText(
+          str_glue("Image Path: ", 
+                   as.character(dat$SourceFile), 
+                   " (not exact image)", sep = " ")
+        )
+      } else {
+        output$image <- renderImage({
+          filename <- normalizePath(file.path(
+            dat$SourceFile))
+          list(src = filename,
+               width  = session$clientData$output_image_width,
+               height = session$clientData$output_image_height)}, 
+          deleteFile = FALSE)
+      }
+      
+      
+    #   output$plot <- renderPlot({
+    #     filename <- normalizePath(file.path("<path>", paste0(input$countyInput, " ", input$reasonInput, ".png", sep = ""))) # you had one extra space before .png
+    #     filename <- filename[file.exists(filename)]
+    #     pngs = lapply(filename, readPNG)
+    #     asGrobs = lapply(pngs, rasterGrob)
+    #     p <- grid.arrange(grobs=asGrobs, nrow = 1)
+    #   }, width = 1000)
+    # }
       
       
       
@@ -330,31 +462,39 @@ library(htmlwidgets)
       #   return(NULL)
       # }
        
+      dat <- tibble()
       
-      # Find files corresponding to selected site
-      myImages <- str_c("www", input$site, 
-                        list.files(str_c("www", input$site, sep = "/")), 
-                        sep = "/" )
+      for (i in seq_along(input$site)) {
       
-      # Find csv file in wd
-      d <- myImages[str_ends(myImages, ".csv")]
+        # Find files corresponding to a site
+        myImages <- str_c("www", input$site[i], 
+                          list.files(str_c("www", input$site[i], sep = "/")), 
+                          sep = "/" )
+        
+        # Find csv file in wd
+        d <- myImages[str_ends(myImages, ".csv")]
+        
+        # Find images in wd
+        #myImages <- myImages[!str_ends(myImages, ".csv")]
+        
+        # Read in and clean up the data
+  
+        d1 <- read_csv(d)
+        dat <- rbind(dat, d1)
+        
+      }
       
-      # Find images in wd
-      #myImages <- myImages[!str_ends(myImages, ".csv")]
-      
-      # Read in and clean up the data
+        dat <- dat %>%
+          select(FileName, UserLabel, Image_Datetime) %>%
+          distinct() %>%
+          mutate(Datetime = ymd_hms(Image_Datetime),
+                 Date = as_date(Datetime),
+                 Hour = hour(Datetime)
+          ) %>%
+          group_by(Date, Hour) %>%
+          count()
+        
 
-      dat <- read_csv(d)
-      dat <- dat %>%
-        select(FileName, Image_Datetime) %>%
-        distinct() %>%
-        mutate(Datetime = ymd_hms(Image_Datetime),
-               Date = as_date(Datetime),
-               Hour = hour(Datetime)
-        ) %>%
-        group_by(Date, Hour) %>%
-        count()
-      
       ggplot(dat) +
         geom_tile(aes(x = Date, y = Hour, fill = n)) +
         ylim(0,24) +
