@@ -6,7 +6,7 @@
 \usage{
 TS_extract_meta(
   ims,
-  tags = c("SourceFile", "UserLabel", "DatetimeOriginal", "TriggerMode", "MoonPhase",
+  tags = c("FileName", "UserLabel", "DatetimeOriginal", "TriggerMode", "MoonPhase",
     "AmbientTemperatureFahrenheit", "AmbientTemperature", "SceneCaptureType")
 )
 }

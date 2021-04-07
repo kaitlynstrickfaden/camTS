@@ -23,6 +23,7 @@ Imports:
     plotly,
     shiny,
     shinydashboard,
+    shinyFiles,
     shinythemes,
     stringr,
     tidyverse
