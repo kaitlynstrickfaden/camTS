@@ -4,19 +4,19 @@
 #' Launches the app for viewing time series data and associated images.
 #' 
 #' @import dplyr
-#' @importFrom ggplot2 ggplot aes geom_time ylim scale_fill_gradient theme_minimal
+#' @importFrom ggplot2 ggplot aes geom_tile ylim scale_fill_gradient theme_minimal
 #' @import htmltools
 #' @import htmlwidgets
 #' @import lubridate
 #' @import magrittr
 #' @import plotly
-#' @import readr
 #' @import shiny
 #' @import shinydashboard
 #' @import shinyFiles
 #' @import shinythemes
 #' @import stringr
 #' @import tidyverse
+#' @importFrom utils read.csv
 #' @return A Shiny window
 #' @export
 
@@ -227,8 +227,7 @@ TS_launch_app <- function() {
         d <- myImages[stringr::str_ends(myImages, ".csv")]
         
         # Read in and clean up the data
-        d1 <- readr::read_csv(d, col_types = list("TriggerMode" = col_character(), 
-                                            "Datetime" = col_datetime()))
+        d1 <- read.csv(d)
         d1 <- d1 %>%
           dplyr::mutate(Stage = dplyr::case_when(Stage > 0 ~ Stage, TRUE ~ 0),
                  Datetime = lubridate::ymd_hms(Datetime),
@@ -355,8 +354,7 @@ TS_launch_app <- function() {
         d <- myImages[stringr::str_ends(myImages, ".csv")]
         
         # Read in and clean up the data
-        d1 <- readr::read_csv(d, col_types = list("TriggerMode" = col_character(), 
-                                           "Datetime" = col_datetime()))
+        d1 <- read.csv(d)
         d1 <- d1 %>%
           dplyr::mutate(Stage = case_when(Stage > 0 ~ Stage, TRUE ~ 0),
                  Datetime = lubridate::ymd_hms(Datetime),
@@ -515,7 +513,7 @@ TS_launch_app <- function() {
         
         
         # Read in and append data to tibble
-        d1 <- readr::read_csv(d)
+        d1 <- read.csv(d)
         dat <- rbind(dat, d1)
         
       }
