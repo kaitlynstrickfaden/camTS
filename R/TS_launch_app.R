@@ -356,8 +356,9 @@ TS_launch_app <- function() {
         # Read in and clean up the data
         d1 <- read.csv(d)
         d1 <- d1 %>%
-          dplyr::mutate(Stage = case_when(Stage > 0 ~ Stage, TRUE ~ 0),
+          dplyr::mutate(Stage = dplyr::case_when(Stage > 0 ~ Stage, TRUE ~ 0),
                  Datetime = lubridate::ymd_hms(Datetime),
+                 Image_Datetime = lubridate::ymd_hms(Image_Datetime),
                  TimeofDay = "Day",
                  DTMatch = "Yes",
                  SibFolder = input$site[i],
@@ -520,7 +521,7 @@ TS_launch_app <- function() {
       
       # Summarize image data
       dat <- dat %>%
-        dplyr::select(FileName, UserLabel, Image_Datetime) %>%
+        dplyr::select('FileName', 'UserLabel', 'Image_Datetime') %>%
         dplyr::distinct() %>%
         dplyr::mutate(Datetime = ymd_hms(Image_Datetime),
                Date = as_date(Datetime),
