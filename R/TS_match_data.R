@@ -4,7 +4,7 @@
 #'
 #' Binds all columns from the second dataset to the first dataset by finding the closest Datetime observations.
 #'
-#' @import dplyr
+#' @import tidyverse
 #' @import lubridate
 #' @param dataset a data frame object containing a column called "Datetime". Datetime column must contain POSIXct date-time objects.
 #' @param imagedata a data frame containing image metadata. Must have a column called "Datetime" containing POSIXct date-time objects and a column called "TriggerMode" with camera trigger mode as character objects (see TS_extract_meta.R).
@@ -59,12 +59,12 @@ TS_match_data <- function(dataset, imagedata) {
   dataset$Index1 <- nearest(d, tl) 
   motion$Index2 <- nearest(mt, d)
     
-  timelapse_join <- inner_join(dataset, timelapse, by = c("Index1"))
-  motion_join <- inner_join(dataset, motion, by = c("Index2"))
+  timelapse_join <- dplyr::inner_join(dataset, timelapse, by = c("Index1"))
+  motion_join <- dplyr::inner_join(dataset, motion, by = c("Index2"))
   
   joined <- rbind(timelapse_join, motion_join)
-  joined <- select(joined, !c("Index1", "Index2"))
-  joined <- arrange(joined, "Image_Datetime")
+  joined <- dplyr::select(joined, !c("Index1", "Index2"))
+  joined <- dplyr::arrange(joined, "Image_Datetime")
   
   return(joined)
     

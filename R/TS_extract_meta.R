@@ -21,14 +21,14 @@ TS_extract_meta <- function(ims, tags = c("FileName", "UserLabel", "DatetimeOrig
     warning("Some of your input files were not images. Only metadata from the image files were extracted.")
   }
   
-  m <- exif_read(im, pipeline = "csv", tags = tags)
+  m <- exiftoolr::exif_read(im, pipeline = "csv", tags = tags)
   
   colnames(m)[which(colnames(m) == "DateTimeOriginal")] <- "Datetime"
-  m$Datetime <- ymd_hms(m$Datetime)
+  m$Datetime <- lubridate::ymd_hms(m$Datetime)
   
   
   if ("MoonPhase" %in% colnames(m)) {
-    m$MoonPhase <- case_when(
+    m$MoonPhase <- dplyr::case_when(
         m$MoonPhase == 0 ~ "New",
         m$MoonPhase == 1 ~ "New Crescent",
         m$MoonPhase == 2 ~ "First Quarter",
@@ -43,7 +43,7 @@ TS_extract_meta <- function(ims, tags = c("FileName", "UserLabel", "DatetimeOrig
   
   
   if ("SceneCaptureType" %in% colnames(m)) {
-    m$SceneCaptureType = case_when(
+    m$SceneCaptureType = dplyr::case_when(
         m$SceneCaptureType == 0 ~ "Standard",
         m$SceneCaptureType == 1 ~ "Landscape",
         m$SceneCaptureType == 2 ~ "Portrait",

@@ -17,10 +17,13 @@ LazyData: true
 Imports:
     dplyr,
     exiftoolr,
+    ggplot2,
     htmltools,
     htmlwidgets,
     lubridate,
+    magrittr,
     plotly,
+    readr,
     shiny,
     shinydashboard,
     shinyFiles,

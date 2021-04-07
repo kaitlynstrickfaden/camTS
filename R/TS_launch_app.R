@@ -4,10 +4,13 @@
 #' Launches the app for viewing time series data and associated images.
 #' 
 #' @import dplyr
+#' @importFrom ggplot2 ggplot aes geom_time ylim scale_fill_gradient theme_minimal
 #' @import htmltools
 #' @import htmlwidgets
 #' @import lubridate
+#' @import magrittr
 #' @import plotly
+#' @import readr
 #' @import shiny
 #' @import shinydashboard
 #' @import shinyFiles
@@ -216,21 +219,21 @@ TS_launch_app <- function() {
       for (i in seq_along(input$site)) {
       
         # Find files corresponding to a site
-        myImages <- str_c(inpath, input$site[i], 
-                          list.files(str_c(inpath, input$site[i], sep = "/")), 
+        myImages <- stringr::str_c(inpath, input$site[i], 
+                          list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
                           sep = "/" )
         
         # Find csv file in wd
-        d <- myImages[str_ends(myImages, ".csv")]
+        d <- myImages[stringr::str_ends(myImages, ".csv")]
         
         # Read in and clean up the data
-        d1 <- read_csv(d, col_types = list("TriggerMode" = col_character(), 
+        d1 <- readr::read_csv(d, col_types = list("TriggerMode" = col_character(), 
                                             "Datetime" = col_datetime()))
         d1 <- d1 %>%
-          mutate(Stage = case_when(Stage > 0 ~ Stage, TRUE ~ 0),
-                 Datetime = ymd_hms(Datetime),
+          dplyr::mutate(Stage = dplyr::case_when(Stage > 0 ~ Stage, TRUE ~ 0),
+                 Datetime = lubridate::ymd_hms(Datetime),
                  image_url = SourceFile) %>%
-          arrange(Datetime)
+          dplyr::arrange(Datetime)
         
         
         # Bind these to the compiled tibble
@@ -258,7 +261,7 @@ TS_launch_app <- function() {
       
       
       # Make the plot
-      plot_ly(
+      plotly::plot_ly(
         hdat,
         x         = ~ Datetime,
         y         = ~ Stage,
@@ -272,7 +275,7 @@ TS_launch_app <- function() {
       ) %>%
         
         # Second y axis
-        add_trace(
+        plotly::add_trace(
           x = dat$Datetime, 
           y = ~ data(), 
           color = ~ UserLabel,
@@ -287,8 +290,8 @@ TS_launch_app <- function() {
                   ) %>%
         
         # Extra plot customization
-        layout(
-          title = paste0("Time series for ", str_flatten(input$site, collapse = ", ")),
+        plotly::layout(
+          title = paste0("Time series for ", stringr::str_flatten(input$site, collapse = ", ")),
           xaxis = list(
             title = "Datetime"
           ),
@@ -310,7 +313,7 @@ TS_launch_app <- function() {
         event_register('plotly_click') %>% # lets you click points
         
         # Changes the color of the clicked point
-        highlight("plotly_click", off = "plotly_doubleclick",
+        plotly::highlight("plotly_click", off = "plotly_doubleclick",
                   color = toRGB("black"), opacityDim = 1,
                   selected = attrs_selected(showlegend = FALSE))
   
@@ -339,36 +342,36 @@ TS_launch_app <- function() {
       w <- parseDirPath(wd, input$fdir)
       inpath <- normalizePath(file.path(w))
       
-      dat <- tibble()
+      dat <- dplyr::tibble()
       
       for (i in seq_along(input$site)) {
         
         # Find files corresponding to a site
-        myImages <- str_c(inpath, input$site[i], 
-                          list.files(str_c(inpath, input$site[i], sep = "/")), 
+        myImages <- stringr::str_c(inpath, input$site[i], 
+                          list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
                           sep = "/" )
         
         # Find csv file in wd
-        d <- myImages[str_ends(myImages, ".csv")]
+        d <- myImages[stringr::str_ends(myImages, ".csv")]
         
         # Read in and clean up the data
-        d1 <- read_csv(d, col_types = list("TriggerMode" = col_character(), 
+        d1 <- readr::read_csv(d, col_types = list("TriggerMode" = col_character(), 
                                            "Datetime" = col_datetime()))
         d1 <- d1 %>%
-          mutate(Stage = case_when(Stage > 0 ~ Stage, TRUE ~ 0),
-                 Datetime = ymd_hms(Datetime),
+          dplyr::mutate(Stage = case_when(Stage > 0 ~ Stage, TRUE ~ 0),
+                 Datetime = lubridate::ymd_hms(Datetime),
                  TimeofDay = "Day",
                  DTMatch = "Yes",
                  SibFolder = input$site[i],
                  image_url = SourceFile) %>%
-          arrange(Datetime)
+          dplyr::arrange(Datetime)
         
         
         # Allow for only showing certain images
         
         if (input$dayonly == TRUE) {
           d1 <- d1 %>%
-            mutate(TimeofDay = case_when(
+            dplyr::mutate(TimeofDay = dplyr::case_when(
               SceneCaptureType == "Night" ~ "Night",
               TRUE ~ "Day")
             )
@@ -376,7 +379,7 @@ TS_launch_app <- function() {
         
         if (input$matchonly == TRUE) {
           d1 <- d1 %>%
-            mutate(DTMatch = case_when(
+            dplyr::mutate(DTMatch = dplyr::case_when(
               as.numeric(Datetime) == as.numeric(Image_Datetime) ~ "Yes",
               TRUE ~ "No")
             )
@@ -390,7 +393,7 @@ TS_launch_app <- function() {
       
       # Filter out all data except the clicked point
       dat <- dat %>%
-        filter(Datetime == click_event()$x & UserLabel == click_event()$customdata)
+        dplyr::filter(Datetime == click_event()$x & UserLabel == click_event()$customdata)
       
       
       # Write the datetime, site name, primary y-axis value, 
@@ -398,39 +401,39 @@ TS_launch_app <- function() {
       
       # Datetime
       output$text1 <- renderText(
-        str_glue("Date and Time: ", as.character(dat$Datetime), sep = " ")
+        stringr::str_glue("Date and Time: ", as.character(dat$Datetime), sep = " ")
       )
 
       # Site name
       output$text2 <- renderText(
-        str_glue("Site: ", as.character(dat$UserLabel), sep = " ")
+        stringr::str_glue("Site: ", as.character(dat$UserLabel), sep = " ")
       )
       
       # Primary y value
       output$text3 <- renderText(
-        str_glue("Stream Stage: ", as.character(dat$Stage), " m", sep = " ")
+        stringr::str_glue("Stream Stage: ", as.character(dat$Stage), " m", sep = " ")
       )
 
       # Secondary y value
       if (input$secondy == "None") {
       output$text4 <- renderText(
-        str_glue("No secondary y axis value")
+        stringr::str_glue("No secondary y axis value")
       )
       }
       if (input$secondy == "Turbidity (NTU)") {
         output$text4 <- renderText(
-          str_glue("Turbidity: ", as.character(dat$WT), " NTU", sep = " ")
+          stringr::str_glue("Turbidity: ", as.character(dat$WT), " NTU", sep = " ")
         )
       }
       if (input$secondy == "Temperature (C)") {
         output$text4 <- renderText(
-          str_glue("Stream Temperature: ", as.character(dat$TW), " C", sep = " ")
+          stringr::str_glue("Stream Temperature: ", as.character(dat$TW), " C", sep = " ")
         )
       }
 
       # Image file name
       output$text5 <- renderText(
-        str_glue("File Name: ", as.character(dat$FileName), sep = " ")
+        stringr::str_glue("File Name: ", as.character(dat$FileName), sep = " ")
       )
 
 
@@ -441,7 +444,7 @@ TS_launch_app <- function() {
       if (input$dayonly == TRUE & dat$TimeofDay == "Night") {
         output$image <- renderImage({list(src = "NA")}, deleteFile = FALSE)
         output$text5 <- renderText(
-          str_glue("File Name: ",
+          stringr::str_glue("File Name: ",
                    as.character(dat$FileName),
                    " (nighttime image)", sep = " ")
         )
@@ -449,7 +452,7 @@ TS_launch_app <- function() {
       } else if (input$matchonly == TRUE & dat$DTMatch == "No") {
         output$image <- renderImage({list(src = "NA")}, deleteFile = FALSE)
         output$text5 <- renderText(
-          str_glue("File Name: ",
+          stringr::str_glue("File Name: ",
                    as.character(dat$FileName),
                    " (not exact image)", sep = " ")
         )
@@ -457,7 +460,7 @@ TS_launch_app <- function() {
       } else {
         output$image <- renderImage({
           filename <- normalizePath(file.path(
-            str_c(inpath, dat$SibFolder, dat$FileName, sep = "/")))
+            stringr::str_c(inpath, dat$SibFolder, dat$FileName, sep = "/")))
           list(src = filename,
                width  = session$clientData$output_image_width,
                height = session$clientData$output_image_height)},
@@ -498,42 +501,42 @@ TS_launch_app <- function() {
       inpath <- normalizePath(file.path(w))
        
       # Make an empty tibble for storing data from selected sites
-      dat <- tibble()
+      dat <- dplyr::tibble()
       
       for (i in seq_along(input$site)) {
       
         # Find files corresponding to a site
-        myImages <- str_c(inpath, input$site[i], 
-                          list.files(str_c(inpath, input$site[i], sep = "/")), 
+        myImages <- stringr::str_c(inpath, input$site[i], 
+                          list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
                           sep = "/" )
         
         # Find csv file in wd
-        d <- myImages[str_ends(myImages, ".csv")]
+        d <- myImages[stringr::str_ends(myImages, ".csv")]
         
         
         # Read in and append data to tibble
-        d1 <- read_csv(d)
+        d1 <- readr::read_csv(d)
         dat <- rbind(dat, d1)
         
       }
       
       # Summarize image data
       dat <- dat %>%
-        select(FileName, UserLabel, Image_Datetime) %>%
-        distinct() %>%
-        mutate(Datetime = ymd_hms(Image_Datetime),
+        dplyr::select(FileName, UserLabel, Image_Datetime) %>%
+        dplyr::distinct() %>%
+        dplyr::mutate(Datetime = ymd_hms(Image_Datetime),
                Date = as_date(Datetime),
                Hour = hour(Datetime)
         ) %>%
-        group_by(Date, Hour) %>%
-        count()
+        dplyr::group_by(Date, Hour) %>%
+        dplyr::count()
 
       # Plot image data as geom_tiles
-      ggplot(dat) +
-        geom_tile(aes(x = Date, y = Hour, fill = n)) +
-        ylim(0,24) +
-        scale_fill_gradient(name = "# of\nImages") +
-        theme_minimal()
+      ggplot2::ggplot(dat) +
+        ggplot2::geom_tile(ggplot2::aes(x = Date, y = Hour, fill = n)) +
+        ggplot2::ylim(0,24) +
+        ggplot2::scale_fill_gradient(name = "# of\nImages") +
+        ggplot2::theme_minimal()
       
     }) # End of densplot renderPlotly
     
