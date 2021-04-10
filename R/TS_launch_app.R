@@ -17,33 +17,35 @@
 #' @import stringr
 #' @import tidyverse
 #' @importFrom utils read.csv
+#' 
+#' @param main_y a named vector of options for the primary y axis. The name will be the name shown on the radio button, and the value should be the column name in the data. For example, an input like 'c("Stream Stage (m)" = "Stage")' tells the app to have a radio button called "Stream Stage (m)" that will be associated with the "Stage" column in the data. The app will open with the first item in the vector as the primary y-axis variable.
+#' @param second_y a named vector of options for the secondary y axis formatted the same way as the main_y parameter. A "none" option will be automatically added. The Shiny app will open with no variable on the secondary y axis.
 #' @return A Shiny window
 #' @export
 
 
-TS_launch_app <- function() {
-
-
-### Make time series plot of image data and display images
-### Kaitlyn Strickfaden
-### 4/7/2021
-
-# 
-# library(grid)
-# library(gridExtra)
-# library(htmltools)
-# library(htmlwidgets)
-# library(lubridate)
-# library(plotly)
-# library(shiny)
-# library(shinydashboard)
-# library(shinyFiles)
-# library(shinythemes)
-# library(stringr)
-# library(tidyverse)
-
-
-
+TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c("Turbidity (NTU)" = "WT", "Temperature (C)" = "TW")) {
+  
+  
+  ### Make time series plot of image data and display images
+  ### Kaitlyn Strickfaden
+  ### 4/10/2021
+  
+  # 
+  # library(grid)
+  # library(gridExtra)
+  # library(htmltools)
+  # library(htmlwidgets)
+  # library(lubridate)
+  # library(plotly)
+  # library(shiny)
+  # library(shinydashboard)
+  # library(shinyFiles)
+  # library(shinythemes)
+  # library(stringr)
+  # library(tidyverse)
+  
+  
   ui <- fluidPage(theme = shinytheme("slate"),
                   
                   # App title ----
@@ -54,9 +56,9 @@ TS_launch_app <- function() {
                     
                     # Panel for inputs ----
                     sidebarPanel(
-                    
+                      
                       width = 5,
-                
+                      
                       
                       # Input: Choose a directory
                       
@@ -64,8 +66,8 @@ TS_launch_app <- function() {
                       shinyDirButton(id = "fdir",
                                      label = "Choose a local directory:",
                                      title = "Navigate to the parent folder:"
-                                     ),
-
+                      ),
+                      
                       
                       textOutput("fdirt"),
                       
@@ -74,23 +76,30 @@ TS_launch_app <- function() {
                       # Placeholder for update after selection of parent directory
                       
                       checkboxGroupInput(inputId = "site",
-                                  label = "Site",
-                                  choices = NULL,
-                                  selected = NULL,
-                                  width = "50%"
+                                         label = "Site",
+                                         choices = NULL,
+                                         selected = NULL,
+                                         width = "50%"
+                      ),
+                      
+                      
+                      # Input: Selection of variables for primary y axis
+                      
+                      radioButtons(inputId = "mainy",
+                                   label = "Primary Y Axis",
+                                   choices = names(main_y),
+                                   selected = names(main_y)[1],
+                                   width = "50%"
                       ),
                       
                       
                       # Input: Selection of variables for secondary y axis
                       
-                      # if you add more choices here, you will also have to add them
-                      # to the "data" reactive argument in the server.
-                      
                       radioButtons(inputId = "secondy",
-                                  label = "Secondary Y Axis",
-                                  choices = c("None", "Turbidity (NTU)", "Temperature (C)"),
-                                  selected = "None",
-                                  width = "50%"
+                                   label = "Secondary Y Axis",
+                                   choices = c("None", names(second_y)),
+                                   selected = "None",
+                                   width = "50%"
                       ),
                       
                       
@@ -116,7 +125,7 @@ TS_launch_app <- function() {
                       textOutput("text5"), # Image file path
                       
                       imageOutput("image"), # Image
-  
+                      
                     ), # end sidebar panel
                     
                     
@@ -162,46 +171,17 @@ TS_launch_app <- function() {
                    #filetypes = c("", "jpg", "jpeg", "png", "tif", "tiff", "gif", "csv"),
                    # (filetypes is apparently a required input, but shiny
                    # seems to be doing fine without it?)
-                   )
-
-    # Take user input for parent directory
-    fdir <- reactive(input$fdir)
-
+    )
+    
+    
     # Observe selection of parent directory
-    observeEvent(ignoreNULL = TRUE,
-                 suspended = TRUE,
-                 eventExpr = {
-                   input$fdir
-                 },
-                 handlerExpr = {
-                   if (!"path" %in% names(fdir())) return()
-                   # I'm not sure if this is even helping anything, but
-                   # the Internet suggested it is...
-                 }
-                 )
-
-    # Outputs parent directory file path in sidebar
-    output$fdirt <- renderText({
-      w <- parseDirPath(wd, input$fdir)
-      normalizePath(file.path(w))
-      # ShinyDirChoose outputs the file path in a goofy way, so parseDirPath 
-      # fixes the formatting and makes it into a more recognizable file path
+    observe({
       
-    })
-    
-    
-  
-    
-    ############### Render clickplot #####################
-    
-    output$clickplot <- renderPlotly({
-      
-      # Require a parent directory
-      req(input$fdir)
-
       # Tell Shiny the right parent directory to use
       w <- parseDirPath(wd, input$fdir)
       inpath <- normalizePath(file.path(w))
+      # ShinyDirChoose outputs the file path in a goofy way, so parseDirPath 
+      # fixes the formatting and makes it into a more recognizable file path
       
       
       # Update checkboxes for sites in parent directory
@@ -211,27 +191,52 @@ TS_launch_app <- function() {
                                selected = list.files(inpath)[1:2]
       )
       
+    })
+    
+    # Outputs parent directory file path in sidebar
+    output$fdirt <- renderText({
+      w <- parseDirPath(wd, input$fdir)
+      normalizePath(file.path(w))
+      
+    })
+    
+    
+    
+    
+    ############### Render clickplot #####################
+    
+    
+    
+    output$clickplot <- renderPlotly({
+      
+      # Require a parent directory
+      req(input$fdir)
+      
+      # Tell Shiny the right parent directory to use
+      w <- parseDirPath(wd, input$fdir)
+      inpath <- normalizePath(file.path(w))
       
       
       # Make an empty tibble for storing data from selected sites
-      dat <- tibble()
+      dat <- dplyr::tibble()
       
+      # For each of the selected sites...
       for (i in seq_along(input$site)) {
-      
-        # Find files corresponding to a site
-        myImages <- stringr::str_c(inpath, input$site[i], 
-                          list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
-                          sep = "/" )
         
-        # Find csv file in wd
+        # Find all files corresponding to the site
+        myImages <- stringr::str_c(inpath, input$site[i], 
+                                   list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
+                                   sep = "/" )
+        
+        # Find the csv file for the site
         d <- myImages[stringr::str_ends(myImages, ".csv")]
         
         # Read in and clean up the data
         d1 <- read.csv(d)
         d1 <- d1 %>%
           dplyr::mutate(Stage = dplyr::case_when(Stage > 0 ~ Stage, TRUE ~ 0),
-                 Datetime = lubridate::ymd_hms(Datetime),
-                 image_url = SourceFile) %>%
+                        Datetime = lubridate::ymd_hms(Datetime)
+          ) %>%
           dplyr::arrange(Datetime)
         
         
@@ -242,28 +247,37 @@ TS_launch_app <- function() {
       
       # Lets you highlight the click event
       hdat <- highlight_key(dat, ~Datetime)
-     
+      
+      
+      # # Allow primary y axis variables to be a user input
+      
+      y_prime <- as.character(input$mainy)
+      
+      mainydata <- reactive({
+        switch(EXPR = input$mainy,
+               (y_prime = c(dat[,main_y[y_prime]]))
+        )
+      })
+      
       
       # Allow secondary y axis variables to be a user input
       
-      # If you add more choices here, you will also have to give them
-      # radioButtons in the UI and text output options below
+      y_sec <- as.character(input$secondy)
       
-      data <- reactive({
-        switch(input$secondy,
-               "None" = NA,
-               "Turbidity (NTU)" = dat$WT,
-               "Temperature (C)" = dat$TW
+      secondydata <- reactive({
+        switch(EXPR = input$secondy,
+               (y_sec = c(dat[,second_y[y_sec]])),
+               "None" = NA
         )
-        })
+      })
       
       
       
-      # Make the plot
+      # Make the main clickplot
       plotly::plot_ly(
         hdat,
         x         = ~ Datetime,
-        y         = ~ Stage,
+        y         = ~ mainydata(),
         color     = ~ UserLabel,
         colors    = "Set1",
         type      = 'scattergl',
@@ -275,18 +289,17 @@ TS_launch_app <- function() {
         
         # Second y axis
         plotly::add_trace(
-          x = dat$Datetime, 
-          y = ~ data(), 
+          x = ~ Datetime, 
+          y = ~ secondydata(), 
           color = ~ UserLabel,
           colors = "Set1",
           yaxis = "y2",
-          name = input$secondy, 
           mode = 'lines+markers', 
           marker = list(
             symbol = "triangle-up",
             size = 6
           )
-                  ) %>%
+        ) %>%
         
         # Extra plot customization
         plotly::layout(
@@ -295,27 +308,26 @@ TS_launch_app <- function() {
             title = "Datetime"
           ),
           yaxis = list(
-            title = "Stream Stage (m)"
+            title = stringr::str_glue("{input$mainy}")
           ),
           yaxis2 = list(
             tickfont = list(color = "blue"),
             overlaying = "y",
             side = "right",
-            title = str_glue("{input$secondy}")
+            title = stringr::str_glue("{input$secondy}")
           ),
           legend = list(
             font = list(size = 8)
           )
-          ) %>%
-      
+        ) %>%
+        
         
         event_register('plotly_click') %>% # lets you click points
         
         # Changes the color of the clicked point
         plotly::highlight("plotly_click", off = "plotly_doubleclick",
-                  color = toRGB("black"), opacityDim = 1,
-                  selected = attrs_selected(showlegend = FALSE))
-  
+                          color = toRGB("black"), opacityDim = 1,
+                          selected = attrs_selected(showlegend = FALSE))
       
     }) # End of clickplot renderPlotly
     
@@ -324,7 +336,7 @@ TS_launch_app <- function() {
     
     ############# Get click information ############################
     
-
+    
     
     
     # Store click information
@@ -332,8 +344,8 @@ TS_launch_app <- function() {
       event_data(event = "plotly_click", source = "hoverplotsource")
     })
     
-  
-      
+    
+    
     # Once a click happens...
     observeEvent(click_event(), {
       
@@ -341,28 +353,31 @@ TS_launch_app <- function() {
       w <- parseDirPath(wd, input$fdir)
       inpath <- normalizePath(file.path(w))
       
+      
+      # Make an empty tibble for storing data from selected sites
       dat <- dplyr::tibble()
       
+      # For each of the selected sites...
       for (i in seq_along(input$site)) {
         
-        # Find files corresponding to a site
+        # Find all files corresponding to that site
         myImages <- stringr::str_c(inpath, input$site[i], 
-                          list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
-                          sep = "/" )
+                                   list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
+                                   sep = "/" )
         
-        # Find csv file in wd
+        # Find the csv file for the site
         d <- myImages[stringr::str_ends(myImages, ".csv")]
         
         # Read in and clean up the data
         d1 <- read.csv(d)
         d1 <- d1 %>%
           dplyr::mutate(Stage = dplyr::case_when(Stage > 0 ~ Stage, TRUE ~ 0),
-                 Datetime = lubridate::ymd_hms(Datetime),
-                 Image_Datetime = lubridate::ymd_hms(Image_Datetime),
-                 TimeofDay = "Day",
-                 DTMatch = "Yes",
-                 SibFolder = input$site[i],
-                 image_url = SourceFile) %>%
+                        Datetime = lubridate::ymd_hms(Datetime),
+                        Image_Datetime = lubridate::ymd_hms(Image_Datetime),
+                        TimeofDay = "Day",
+                        DTMatch = "Yes",
+                        SibFolder = input$site[i]
+          ) %>%
           dplyr::arrange(Datetime)
         
         
@@ -390,9 +405,38 @@ TS_launch_app <- function() {
         
       }
       
+      
       # Filter out all data except the clicked point
       dat <- dat %>%
-        dplyr::filter(Datetime == click_event()$x & UserLabel == click_event()$customdata)
+        dplyr::filter(Datetime == click_event()$x & 
+                        UserLabel == click_event()$customdata)
+      
+      
+      # Allow primary y axis variables to be a user input
+      
+      y_prime <- as.character(input$mainy)
+      
+      mainydata <- reactive({
+        switch(EXPR = input$mainy,
+               (y_prime = c(dat[dat$Datetime == click_event()$x & 
+                                  dat$UserLabel == click_event()$customdata,
+                                main_y[y_prime]]))
+        )
+      })
+      
+      
+      # Allow secondary y axis variables to be a user input
+      
+      y_sec <- as.character(input$secondy)
+      
+      secondydata <- reactive({
+        switch(EXPR = input$secondy,
+               (y_sec = c(dat[dat$Datetime == click_event()$x & 
+                                dat$UserLabel == click_event()$customdata,
+                              second_y[y_sec]])),
+               "None" = NA
+        )
+      })
       
       
       # Write the datetime, site name, primary y-axis value, 
@@ -402,7 +446,7 @@ TS_launch_app <- function() {
       output$text1 <- renderText(
         stringr::str_glue("Date and Time: ", as.character(dat$Datetime), sep = " ")
       )
-
+      
       # Site name
       output$text2 <- renderText(
         stringr::str_glue("Site: ", as.character(dat$UserLabel), sep = " ")
@@ -410,52 +454,47 @@ TS_launch_app <- function() {
       
       # Primary y value
       output$text3 <- renderText(
-        stringr::str_glue("Stream Stage: ", as.character(dat$Stage), " m", sep = " ")
+        stringr::str_glue({input$mainy}, ": ", as.character(mainydata()), sep = " ")
       )
-
+      
       # Secondary y value
       if (input$secondy == "None") {
-      output$text4 <- renderText(
-        stringr::str_glue("No secondary y axis value")
-      )
-      }
-      if (input$secondy == "Turbidity (NTU)") {
         output$text4 <- renderText(
-          stringr::str_glue("Turbidity: ", as.character(dat$WT), " NTU", sep = " ")
+          stringr::str_glue("No secondary y axis value")
         )
       }
-      if (input$secondy == "Temperature (C)") {
+      if (input$secondy != "None") {
         output$text4 <- renderText(
-          stringr::str_glue("Stream Temperature: ", as.character(dat$TW), " C", sep = " ")
+          stringr::str_glue({input$secondy}, ": ", as.character(secondydata()))
         )
       }
-
+      
       # Image file name
       output$text5 <- renderText(
         stringr::str_glue("File Name: ", as.character(dat$FileName), sep = " ")
       )
-
-
+      
+      
       # Draw the corresponding image in the sidebar
       # Change to renderPlot with rasterGrob to display multiple images
-
+      
       # Nighttime image
       if (input$dayonly == TRUE & dat$TimeofDay == "Night") {
         output$image <- renderImage({list(src = "NA")}, deleteFile = FALSE)
         output$text5 <- renderText(
           stringr::str_glue("File Name: ",
-                   as.character(dat$FileName),
-                   " (nighttime image)", sep = " ")
+                            as.character(dat$FileName),
+                            " (nighttime image)", sep = " ")
         )
-      # Non-exact image
+        # Non-exact image
       } else if (input$matchonly == TRUE & dat$DTMatch == "No") {
         output$image <- renderImage({list(src = "NA")}, deleteFile = FALSE)
         output$text5 <- renderText(
           stringr::str_glue("File Name: ",
-                   as.character(dat$FileName),
-                   " (not exact image)", sep = " ")
+                            as.character(dat$FileName),
+                            " (not exact image)", sep = " ")
         )
-      # Anything else
+        # Anything else
       } else {
         output$image <- renderImage({
           filename <- normalizePath(file.path(
@@ -498,16 +537,16 @@ TS_launch_app <- function() {
       # Tell Shiny the right parent directory to use
       w <- parseDirPath(wd, input$fdir)
       inpath <- normalizePath(file.path(w))
-       
+      
       # Make an empty tibble for storing data from selected sites
       dat <- dplyr::tibble()
       
       for (i in seq_along(input$site)) {
-      
+        
         # Find files corresponding to a site
         myImages <- stringr::str_c(inpath, input$site[i], 
-                          list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
-                          sep = "/" )
+                                   list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
+                                   sep = "/" )
         
         # Find csv file in wd
         d <- myImages[stringr::str_ends(myImages, ".csv")]
@@ -524,12 +563,12 @@ TS_launch_app <- function() {
         dplyr::select('FileName', 'UserLabel', 'Image_Datetime') %>%
         dplyr::distinct() %>%
         dplyr::mutate(Datetime = ymd_hms(Image_Datetime),
-               Date = as_date(Datetime),
-               Hour = hour(Datetime)
+                      Date = as_date(Datetime),
+                      Hour = hour(Datetime)
         ) %>%
         dplyr::group_by(Date, Hour) %>%
         dplyr::count()
-
+      
       # Plot image data as geom_tiles
       ggplot2::ggplot(dat) +
         ggplot2::geom_tile(ggplot2::aes(x = Date, y = Hour, fill = n)) +
@@ -540,16 +579,13 @@ TS_launch_app <- function() {
     }) # End of densplot renderPlotly
     
     
-    
   } # end of server
-    
+  
   
   shinyApp(ui = ui, server = server)
-
+  
   
 } # end TS_launch_app
-  
-  
   
   
   
