@@ -20,16 +20,19 @@
 #' 
 #' @param main_y a named vector of options for the primary y axis. The name will be the name shown on the radio button, and the value should be the column name in the data. For example, an input like 'c("Stream Stage (m)" = "Stage")' tells the app to have a radio button called "Stream Stage (m)" that will be associated with the "Stage" column in the data. The app will open with the first item in the vector as the primary y-axis variable.
 #' @param second_y a named vector of options for the secondary y axis formatted the same way as the main_y parameter. A "none" option will be automatically added. The Shiny app will open with no variable on the secondary y axis.
+#' @param tz the timezone of your computer (not of the data!). Please refer to OlsonNames() for a list of valid timezones.
 #' @return A Shiny window
 #' @export
 
 
-TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c("Turbidity (NTU)" = "WT", "Temperature (C)" = "TW")) {
-  
+TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), 
+                          second_y = c("Turbidity (NTU)" = "WT", 
+                                       "Temperature (C)" = "TW"), 
+                          tz = "America/Los_Angeles") {
   
   ### Make time series plot of image data and display images
   ### Kaitlyn Strickfaden
-  ### 4/10/2021
+  ### 5/2/2021
   
   # 
   # library(grid)
@@ -44,6 +47,21 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c
   # library(shinythemes)
   # library(stringr)
   # library(tidyverse)
+  
+  
+  if (!is.vector(main_y) | is.null(names(main_y)) | any(is.na(names(main_y))) == TRUE) {
+    stop("main_y must be a named vector")
+  }
+  
+  if (!is.null(second_y)) {
+    if (!is.vector(second_y) | is.null(names(second_y)) | any(is.na(names(second_y))) == TRUE) {
+      stop("second_y must be a named vector")
+    }
+  }
+  
+  if (tz %in% OlsonNames() == FALSE) {
+    stop("You did not input a valid timezone. Use the function OlsonNames() to see a list of valid timezones.")
+  }
   
   
   ui <- fluidPage(theme = shinytheme("slate"),
@@ -234,8 +252,8 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c
         # Read in and clean up the data
         d1 <- read.csv(d)
         d1 <- d1 %>%
-          dplyr::mutate(Stage = dplyr::case_when(Stage > 0 ~ Stage, TRUE ~ 0),
-                        Datetime = lubridate::ymd_hms(Datetime)
+          dplyr::mutate(Datetime = with_tz(lubridate::ymd_hms(Datetime), tz),
+                        Image_Datetime = with_tz(lubridate::ymd_hms(Image_Datetime), tz)
           ) %>%
           dplyr::arrange(Datetime)
         
@@ -255,7 +273,7 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c
       
       mainydata <- reactive({
         switch(EXPR = input$mainy,
-               (y_prime = c(dat[,main_y[y_prime]]))
+               (y_prime = dat[,main_y[y_prime]])
         )
       })
       
@@ -266,7 +284,7 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c
       
       secondydata <- reactive({
         switch(EXPR = input$secondy,
-               (y_sec = c(dat[,second_y[y_sec]])),
+               (y_sec = dat[,second_y[y_sec]]),
                "None" = NA
         )
       })
@@ -277,7 +295,7 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c
       plotly::plot_ly(
         hdat,
         x         = ~ Datetime,
-        y         = ~ mainydata(),
+        y         = mainydata(),
         color     = ~ UserLabel,
         colors    = "Set1",
         type      = 'scattergl',
@@ -287,10 +305,13 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c
         customdata = ~ UserLabel
       ) %>%
         
+        
+        event_register('plotly_click') %>% # lets you click points
+        
         # Second y axis
         plotly::add_trace(
-          x = ~ Datetime, 
-          y = ~ secondydata(), 
+          x = ~ Datetime,
+          y = secondydata(), 
           color = ~ UserLabel,
           colors = "Set1",
           yaxis = "y2",
@@ -322,12 +343,11 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c
         ) %>%
         
         
-        event_register('plotly_click') %>% # lets you click points
-        
         # Changes the color of the clicked point
         plotly::highlight("plotly_click", off = "plotly_doubleclick",
                           color = toRGB("black"), opacityDim = 1,
                           selected = attrs_selected(showlegend = FALSE))
+      
       
     }) # End of clickplot renderPlotly
     
@@ -371,9 +391,8 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c
         # Read in and clean up the data
         d1 <- read.csv(d)
         d1 <- d1 %>%
-          dplyr::mutate(Stage = dplyr::case_when(Stage > 0 ~ Stage, TRUE ~ 0),
-                        Datetime = lubridate::ymd_hms(Datetime),
-                        Image_Datetime = lubridate::ymd_hms(Image_Datetime),
+          dplyr::mutate(Datetime = with_tz(lubridate::ymd_hms(Datetime), tz),
+                        Image_Datetime = with_tz(lubridate::ymd_hms(Image_Datetime), tz),
                         TimeofDay = "Day",
                         DTMatch = "Yes",
                         SibFolder = input$site[i]
@@ -418,9 +437,9 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c
       
       mainydata <- reactive({
         switch(EXPR = input$mainy,
-               (y_prime = c(dat[dat$Datetime == click_event()$x & 
-                                  dat$UserLabel == click_event()$customdata,
-                                main_y[y_prime]]))
+               (y_prime = dat[dat$Datetime == click_event()$x & 
+                                dat$UserLabel == click_event()$customdata,
+                              main_y[y_prime]])
         )
       })
       
@@ -431,9 +450,9 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c
       
       secondydata <- reactive({
         switch(EXPR = input$secondy,
-               (y_sec = c(dat[dat$Datetime == click_event()$x & 
-                                dat$UserLabel == click_event()$customdata,
-                              second_y[y_sec]])),
+               (y_sec = dat[dat$Datetime == click_event()$x & 
+                              dat$UserLabel == click_event()$customdata,
+                            second_y[y_sec]]),
                "None" = NA
         )
       })
@@ -586,6 +605,3 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), second_y = c
   
   
 } # end TS_launch_app
-  
-  
-  

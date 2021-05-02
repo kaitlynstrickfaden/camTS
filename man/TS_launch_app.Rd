@@ -7,13 +7,16 @@ Launches the app for viewing time series data and associated images.}
 \usage{
 TS_launch_app(
   main_y = c(`Stream Stage (m)` = "Stage"),
-  second_y = c(`Turbidity (NTU)` = "WT", `Temperature (C)` = "TW")
+  second_y = c(`Turbidity (NTU)` = "WT", `Temperature (C)` = "TW"),
+  tz = "America/Los_Angeles"
 )
 }
 \arguments{
 \item{main_y}{a named vector of options for the primary y axis. The name will be the name shown on the radio button, and the value should be the column name in the data. For example, an input like 'c("Stream Stage (m)" = "Stage")' tells the app to have a radio button called "Stream Stage (m)" that will be associated with the "Stage" column in the data. The app will open with the first item in the vector as the primary y-axis variable.}
 
 \item{second_y}{a named vector of options for the secondary y axis formatted the same way as the main_y parameter. A "none" option will be automatically added. The Shiny app will open with no variable on the secondary y axis.}
+
+\item{tz}{the timezone of your computer (not of the data!). Please refer to OlsonNames() for a list of valid timezones.}
 }
 \value{
 A Shiny window
