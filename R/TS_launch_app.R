@@ -252,8 +252,8 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
         # Read in and clean up the data
         d1 <- read.csv(d)
         d1 <- d1 %>%
-          dplyr::mutate(Datetime = with_tz(lubridate::ymd_hms(Datetime), tz),
-                        Image_Datetime = with_tz(lubridate::ymd_hms(Image_Datetime), tz)
+          dplyr::mutate(Datetime = lubridate::ymd_hms(Datetime, tz = tz),
+                        Image_Datetime = lubridate::ymd_hms(Image_Datetime, tz = tz)
           ) %>%
           dplyr::arrange(Datetime)
         
@@ -391,8 +391,8 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
         # Read in and clean up the data
         d1 <- read.csv(d)
         d1 <- d1 %>%
-          dplyr::mutate(Datetime = with_tz(lubridate::ymd_hms(Datetime), tz),
-                        Image_Datetime = with_tz(lubridate::ymd_hms(Image_Datetime), tz),
+          dplyr::mutate(Datetime = lubridate::ymd_hms(Datetime, tz = tz),
+                        Image_Datetime = lubridate::ymd_hms(Image_Datetime, tz = tz),
                         TimeofDay = "Day",
                         DTMatch = "Yes",
                         SibFolder = input$site[i]
