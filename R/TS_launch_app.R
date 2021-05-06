@@ -32,7 +32,7 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
   
   ### Make time series plot of image data and display images
   ### Kaitlyn Strickfaden
-  ### 5/2/2021
+  ### 5/6/2021
   
   # 
   # library(grid)
@@ -206,7 +206,7 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
       updateCheckboxGroupInput(session, "site",
                                label = "Site",
                                choices = list.files(inpath),
-                               selected = list.files(inpath)[1:2]
+                               selected = list.files(inpath)[1]
       )
       
     })
@@ -252,10 +252,43 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
         # Read in and clean up the data
         d1 <- read.csv(d)
         d1 <- d1 %>%
-          dplyr::mutate(Datetime = lubridate::ymd_hms(Datetime, tz = tz),
-                        Image_Datetime = lubridate::ymd_hms(Image_Datetime, tz = tz)
+          dplyr::mutate(Datetime = lubridate::ymd_hms(Datetime, 
+                                                      tz = tz),
+                        Image_Datetime = lubridate::ymd_hms(Image_Datetime, 
+                                                            tz = tz),
+                        TimeofDay = "Day",
+                        DTMatch = "Yes",
+                        SibFolder = input$site[i]
           ) %>%
           dplyr::arrange(Datetime)
+        
+        
+        # Allow for only showing certain images
+        
+        if (input$dayonly == TRUE) {
+          d1 <- d1 %>%
+            dplyr::mutate(TimeofDay = dplyr::case_when(
+              SceneCaptureType == "Night" ~ "Night",
+              TRUE ~ "Day")
+            )
+        }
+        
+        if (input$matchonly == TRUE) {
+          d1 <- d1 %>%
+            dplyr::mutate(DTMatch = dplyr::case_when(
+              as.numeric(Datetime) == as.numeric(Image_Datetime) ~ "Yes",
+              TRUE ~ "No")
+            )
+        }
+        
+        
+        # Make TS points size 0 if they have nighttime or non-exact images
+        d1 <- d1 %>%
+          mutate(Size = case_when(
+            TimeofDay == "Night" ~ 0,
+            DTMatch == "No" ~ 0,
+            TRUE ~ 6
+          ))
         
         
         # Bind these to the compiled tibble
@@ -300,6 +333,10 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
         colors    = "Set1",
         type      = 'scattergl',
         mode      = 'lines+markers',
+        line = list(
+          width = 0.5),
+        marker = list(
+          size = ~ as.numeric(Size)),
         hoverinfo = 'y',
         source = "hoverplotsource",
         customdata = ~ UserLabel
@@ -316,10 +353,11 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
           colors = "Set1",
           yaxis = "y2",
           mode = 'lines+markers', 
+          line = list(
+            width = 0.5),
           marker = list(
             symbol = "triangle-up",
-            size = 6
-          )
+            size = ~ as.numeric(Size))
         ) %>%
         
         # Extra plot customization
@@ -391,8 +429,10 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
         # Read in and clean up the data
         d1 <- read.csv(d)
         d1 <- d1 %>%
-          dplyr::mutate(Datetime = lubridate::ymd_hms(Datetime, tz = tz),
-                        Image_Datetime = lubridate::ymd_hms(Image_Datetime, tz = tz),
+          dplyr::mutate(Datetime = lubridate::ymd_hms(Datetime, 
+                                                      tz = tz),
+                        Image_Datetime = lubridate::ymd_hms(Image_Datetime, 
+                                                            tz = tz),
                         TimeofDay = "Day",
                         DTMatch = "Yes",
                         SibFolder = input$site[i]
@@ -605,3 +645,8 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
   
   
 } # end TS_launch_app
+
+
+
+
+
