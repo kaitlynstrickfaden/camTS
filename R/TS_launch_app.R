@@ -32,7 +32,7 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
   
   ### Make time series plot of image data and display images
   ### Kaitlyn Strickfaden
-  ### 5/6/2021
+  ### 5/14/2021
   
   # 
   # library(grid)
@@ -281,14 +281,35 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
             )
         }
         
-        
         # Make TS points size 0 if they have nighttime or non-exact images
+        # Change hover info dependent on point size (i.e. image status)
+        
         d1 <- d1 %>%
-          mutate(Size = case_when(
+          mutate(PointSize = dplyr::case_when(
             TimeofDay == "Night" ~ 0,
             DTMatch == "No" ~ 0,
-            TRUE ~ 6
-          ))
+            TRUE ~ 6),
+            # Text to display on the hover
+            # Needs to be its own column because case_when doesn't work within paste
+            Hover = case_when(PointSize == 0 & input$secondy != "None" ~
+                                paste("%{x}<br>",
+                                      "%{yaxis.title.text}: %{y}<br>",
+                                      "%{text}<br>",
+                                      "Non-target Image"),
+                              PointSize == 0 & input$secondy == "None" ~
+                                paste("%{x}<br>",
+                                      "%{yaxis.title.text}: %{y}<br>",
+                                      "Non-target Image"),
+                              PointSize != 0 & input$secondy != "None" ~
+                                paste("%{x}<br>",
+                                      "%{yaxis.title.text}: %{y}<br>",
+                                      "%{text}<br>",
+                                      "Target Image"),
+                              TRUE ~
+                                paste("%{x}<br>",
+                                      "%{yaxis.title.text}: %{y}<br>",
+                                      "Target Image"))
+          )
         
         
         # Bind these to the compiled tibble
@@ -327,19 +348,21 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
       # Make the main clickplot
       plotly::plot_ly(
         hdat,
-        x         = ~ Datetime,
-        y         = mainydata(),
-        color     = ~ UserLabel,
-        colors    = "Set1",
-        type      = 'scattergl',
-        mode      = 'lines+markers',
-        line = list(
-          width = 0.5),
-        marker = list(
-          size = ~ as.numeric(Size)),
-        hoverinfo = 'y',
-        source = "hoverplotsource",
-        customdata = ~ UserLabel
+        x             = ~ Datetime,
+        y             = mainydata(),
+        text          = stringr::str_glue("{y_sec}: {secondydata()}"),
+        # Have to store text on secondary y data so it can get picked up on the hover
+        color         = ~ UserLabel,
+        colors        = "Set1",
+        type          = 'scattergl',
+        mode          = 'lines+markers',
+        line          = list(
+          width       = 0.5),
+        marker        = list(
+          size        = ~ PointSize),
+        source        = "hoverplotsource",
+        customdata    = ~ UserLabel,
+        hovertemplate = ~ Hover
       ) %>%
         
         
@@ -347,17 +370,20 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
         
         # Second y axis
         plotly::add_trace(
-          x = ~ Datetime,
-          y = secondydata(), 
-          color = ~ UserLabel,
-          colors = "Set1",
-          yaxis = "y2",
-          mode = 'lines+markers', 
-          line = list(
-            width = 0.5),
-          marker = list(
-            symbol = "triangle-up",
-            size = ~ as.numeric(Size))
+          x             = ~ Datetime,
+          y             = secondydata(),
+          text          = stringr::str_glue("{y_prime}: {mainydata()}"),
+          # Have to store text on main y data so it can get picked up on the hover
+          color         = ~ UserLabel,
+          colors        = "Set1",
+          yaxis         = "y2",
+          mode          = 'lines+markers', 
+          line          = list(
+            width       = 0.5),
+          marker        = list(
+            symbol      = "triangle-up",
+            size        = ~ PointSize),
+          hovertemplate = ~ Hover
         ) %>%
         
         # Extra plot customization
@@ -377,7 +403,9 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
           ),
           legend = list(
             font = list(size = 8)
-          )
+          ),
+          hovermode = "closest"
+          
         ) %>%
         
         
@@ -645,8 +673,6 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
   
   
 } # end TS_launch_app
-
-
 
 
 
