@@ -23,6 +23,7 @@ Imports:
     lubridate,
     magrittr,
     plotly,
+    rlang,
     shiny,
     shinydashboard,
     shinyFiles,

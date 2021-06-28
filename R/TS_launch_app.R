@@ -25,29 +25,32 @@
 #' @export
 
 
+### Make time series plot of image data and display images
+### Kaitlyn Strickfaden
+### 6/26/2021
+# 
+# 
+# library(grid)
+# library(gridExtra)
+# library(htmltools)
+# library(htmlwidgets)
+# library(lubridate)
+# library(plotly)
+# library(shiny)
+# library(shinydashboard)
+# library(shinyFiles)
+# library(shinythemes)
+# library(stringr)
+# library(tidyverse)
+
+
+
 TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"), 
                           second_y = c("Turbidity (NTU)" = "WT", 
                                        "Temperature (C)" = "TW"), 
-                          tz = "America/Los_Angeles") {
+                          tz = "America/Los_Angeles") 
   
-  ### Make time series plot of image data and display images
-  ### Kaitlyn Strickfaden
-  ### 5/14/2021
-  
-  # 
-  # library(grid)
-  # library(gridExtra)
-  # library(htmltools)
-  # library(htmlwidgets)
-  # library(lubridate)
-  # library(plotly)
-  # library(shiny)
-  # library(shinydashboard)
-  # library(shinyFiles)
-  # library(shinythemes)
-  # library(stringr)
-  # library(tidyverse)
-  
+{
   
   if (!is.vector(main_y) | is.null(names(main_y)) | any(is.na(names(main_y))) == TRUE) {
     stop("main_y must be a named vector")
@@ -60,110 +63,147 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
   }
   
   if (tz %in% OlsonNames() == FALSE) {
-    stop("You did not input a valid timezone. Use the function OlsonNames() to see a list of valid timezones.")
+    stop("You did not input a valid timezone. Use OlsonNames() to see a list of valid timezones.")
   }
   
   
-  ui <- fluidPage(theme = shinytheme("slate"),
+  
+  ui <- fluidPage(theme = shinytheme("sandstone"),
                   
                   # App title ----
                   titlePanel("Plot Time Series with Associated Images"),
                   
-                  # Sidebar layout with input and output definitions ----
-                  sidebarLayout(
-                    
-                    # Panel for inputs ----
-                    sidebarPanel(
-                      
-                      width = 5,
-                      
-                      
-                      # Input: Choose a directory
-                      
-                      
-                      shinyDirButton(id = "fdir",
-                                     label = "Choose a local directory:",
-                                     title = "Navigate to the parent folder:"
-                      ),
-                      
-                      
-                      textOutput("fdirt"),
-                      
-                      
-                      # Input: Selection of site
-                      # Placeholder for update after selection of parent directory
-                      
-                      checkboxGroupInput(inputId = "site",
-                                         label = "Site",
-                                         choices = NULL,
-                                         selected = NULL,
-                                         width = "50%"
-                      ),
-                      
-                      
-                      # Input: Selection of variables for primary y axis
-                      
-                      radioButtons(inputId = "mainy",
-                                   label = "Primary Y Axis",
-                                   choices = names(main_y),
-                                   selected = names(main_y)[1],
-                                   width = "50%"
-                      ),
-                      
-                      
-                      # Input: Selection of variables for secondary y axis
-                      
-                      radioButtons(inputId = "secondy",
-                                   label = "Secondary Y Axis",
-                                   choices = c("None", names(second_y)),
-                                   selected = "None",
-                                   width = "50%"
-                      ),
-                      
-                      
-                      # Input: Decide if only daytime images should be rendered in side panel
-                      
-                      checkboxInput(inputId = "dayonly",
-                                    label = "Daytime images only?",
-                                    value = FALSE
-                      ),
-                      
-                      checkboxInput(inputId = "matchonly",
-                                    label = "Exact images only?",
-                                    value = FALSE
-                      ),
-                      
-                      
-                      ## Sidebar Panel Outputs: ---------------
-                      
-                      textOutput("text1"), # Date and time
-                      textOutput("text2"), # Site
-                      textOutput("text3"), # Stream stage
-                      textOutput("text4"), # Secondary y axis value
-                      textOutput("text5"), # Image file path
-                      
-                      imageOutput("image"), # Image
-                      
-                    ), # end sidebar panel
+                  # Top Output
+                  fluidRow(
                     
                     
+                    # Image Output
+                    column(5, style = "height:70vh;background-color: black; color: white;",
+                           
+                           "Image", br(), br(),
+                           
+                           imageOutput("image", height = "60vh"), # Image
+                           
+                           # Text Output
+                           fluidRow(  
+                             
+                             column(6,
+                                    textOutput("text1"), # Date and time
+                                    textOutput("text2"), # Site
+                                    textOutput("text5"),  # Image file path
+                             ),
+                             
+                             column(6,
+                                    textOutput("text3"), # Main y value
+                                    textOutput("text4")  # Secondary y axis value
+                             )
+                             
+                           ) # end of text output
+                           
+                    ), # end of image output
                     
-                    # Main panel for displaying outputs ----
-                    mainPanel(
-                      
-                      width = 7,
-                      
-                      ## Main Panel Output: ----
-                      
-                      plotlyOutput("clickplot"), # Time series plot
-                      
-                      plotOutput("densplot", height = "150px")
-                      
-                    ) # end mainPanel
+                    # Plot Output
+                    column(7,
+                           
+                           "Time Series", br(),
+                           
+                           plotlyOutput("clickplot", height = "54vh"), # Time series plot
+                           plotlyOutput("densplot", height = "15vh")
+                           
+                    ) # End of plot output
                     
-                  ) # end sidebarLayout
+                  ), # End of top output
                   
-  ) # end fluidPage
+                  
+                  # User Inputs
+                  fluidRow(
+                    
+                    # User Inputs
+                    column(5, style = "background-color: LightGray;",
+                           
+                           fluidRow(
+                             
+                             # Left Side of Inputs
+                             column(5, 
+                                    
+                                    # Input: Choose a directory
+                                    shinyDirButton(id = "fdir",
+                                                   label = "Choose a local directory:",
+                                                   title = "Navigate to the parent folder:",
+                                                   buttonType = "custom",
+                                                   style = "background-color: orange; color: black; margin-top: 10px; margin-bottom: 10px;"
+                                    ),
+                                    
+                                    
+                                    textOutput("fdirt"),
+                                    
+                                    # Input: Selection of site
+                                    # Placeholder for update after selection of parent directory
+                                    selectInput(inputId = "site",
+                                                label = "Site",
+                                                choices = NULL,
+                                                selected = NULL,
+                                                multiple = TRUE,
+                                                width = "90%"
+                                    ),
+                                    
+                                    # Input: Decide if only daytime images or images with 
+                                    # a timestamp that match a data point exactly should 
+                                    # be rendered in side panel
+                                    checkboxInput(inputId = "dayonly",
+                                                  label = "Daytime images only?",
+                                                  value = FALSE
+                                    ),
+                                    
+                                    checkboxInput(inputId = "matchonly",
+                                                  label = "Exact images only?",
+                                                  value = FALSE
+                                    )
+                                    
+                             ),
+                             
+                             
+                             # Right Side of Inputs
+                             column(7,
+                                    
+                                    br(), "Inputs", br(), br(),
+                                    
+                                    # Input: Selection of variables for primary y axis
+                                    selectInput(inputId = "mainy",
+                                                label = "Primary Y Axis",
+                                                choices = names(main_y),
+                                                selected = names(main_y)[1],
+                                                multiple = FALSE,
+                                                width = "90%"
+                                    ),
+                                    
+                                    
+                                    # Input: Selection of variables for secondary y axis
+                                    selectInput(inputId = "secondy",
+                                                label = "Secondary Y Axis",
+                                                choices = c("None", names(second_y)),
+                                                selected = "None",
+                                                multiple = FALSE,
+                                                width = "90%"
+                                    )
+                                    
+                             ))
+                           
+                    ),
+                    
+                    # Data Table
+                    column(7,
+                           
+                           "Data Table", br(),
+                           
+                           DTOutput("dattable")
+                    )
+                    
+                  ) # end of user inputs
+                  
+                  
+  ) # End of fluidpage ui
+  
   
   
   
@@ -184,10 +224,10 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
                    roots = wd,
                    session = session,
                    updateFreq = 0,
-                   defaultRoot = getwd(),
+                   defaultRoot = wd,
                    allowDirCreate = FALSE
                    #filetypes = c("", "jpg", "jpeg", "png", "tif", "tiff", "gif", "csv"),
-                   # (filetypes is apparently a required input, but shiny
+                   # (filetypes is apparently a required input, but Shiny
                    # seems to be doing fine without it?)
     )
     
@@ -203,10 +243,10 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
       
       
       # Update checkboxes for sites in parent directory
-      updateCheckboxGroupInput(session, "site",
-                               label = "Site",
-                               choices = list.files(inpath),
-                               selected = list.files(inpath)[1]
+      updateSelectInput(session, "site",
+                        label = "Site",
+                        choices = list.files(inpath),
+                        selected = list.files(inpath)[1]
       )
       
     })
@@ -217,6 +257,55 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
       normalizePath(file.path(w))
       
     })
+    
+    
+    
+    ############ Render data table #################### 
+    
+    output$dattable <- renderDT({
+      
+      # Require a parent directory
+      req(input$fdir)
+      
+      # Tell Shiny the right parent directory to use
+      
+      w <- parseDirPath(wd, input$fdir)
+      inpath <- normalizePath(file.path(w))
+      
+      
+      # Make an empty tibble for storing data from selected sites
+      dat <- dplyr::tibble()
+      
+      # For each of the selected sites...
+      for (i in seq_along(input$site)) {
+        
+        # Find all files corresponding to the site
+        
+        myFiles <- stringr::str_c(inpath, input$site[i], 
+                                  list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
+                                  sep = "/" )
+        
+        
+        # Read in and clean up the data
+        
+        d <- read.csv(myFiles[stringr::str_ends(myFiles, ".csv")])
+        d <- d %>%
+          dplyr::mutate(Datetime = lubridate::ymd_hms(.data$Datetime, 
+                                                      tz = tz),
+                        Image_Datetime = lubridate::ymd_hms(.data$Image_Datetime, 
+                                                            tz = tz)
+          ) %>%
+          dplyr::arrange(.data$Datetime)
+        
+        # Bind these to the compiled tibble
+        dat <- rbind(dat, d)
+        
+      }
+      
+      DT::datatable(dat, rownames = F) #, editable = "row")
+      
+    }) # end of render data table
+    
     
     
     
@@ -231,91 +320,125 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
       req(input$fdir)
       
       # Tell Shiny the right parent directory to use
+      
       w <- parseDirPath(wd, input$fdir)
       inpath <- normalizePath(file.path(w))
       
       
       # Make an empty tibble for storing data from selected sites
-      dat <- dplyr::tibble()
+      dat1 <- dplyr::tibble()
       
       # For each of the selected sites...
       for (i in seq_along(input$site)) {
         
         # Find all files corresponding to the site
-        myImages <- stringr::str_c(inpath, input$site[i], 
-                                   list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
-                                   sep = "/" )
         
-        # Find the csv file for the site
-        d <- myImages[stringr::str_ends(myImages, ".csv")]
+        myFiles <- stringr::str_c(inpath, input$site[i],
+                                  list.files(stringr::str_c(inpath, input$site[i], sep = "/")),
+                                  sep = "/" )
+        
         
         # Read in and clean up the data
-        d1 <- read.csv(d)
-        d1 <- d1 %>%
-          dplyr::mutate(Datetime = lubridate::ymd_hms(Datetime, 
+        
+        d <- read.csv(myFiles[stringr::str_ends(myFiles, ".csv")])
+        d <- d %>%
+          dplyr::mutate(Datetime = lubridate::ymd_hms(.data$Datetime,
                                                       tz = tz),
-                        Image_Datetime = lubridate::ymd_hms(Image_Datetime, 
+                        Image_Datetime = lubridate::ymd_hms(.data$Image_Datetime,
                                                             tz = tz),
-                        TimeofDay = "Day",
-                        DTMatch = "Yes",
-                        SibFolder = input$site[i]
+                        Folder = input$site[i]
           ) %>%
-          dplyr::arrange(Datetime)
-        
-        
-        # Allow for only showing certain images
-        
-        if (input$dayonly == TRUE) {
-          d1 <- d1 %>%
-            dplyr::mutate(TimeofDay = dplyr::case_when(
-              SceneCaptureType == "Night" ~ "Night",
-              TRUE ~ "Day")
-            )
-        }
-        
-        if (input$matchonly == TRUE) {
-          d1 <- d1 %>%
-            dplyr::mutate(DTMatch = dplyr::case_when(
-              as.numeric(Datetime) == as.numeric(Image_Datetime) ~ "Yes",
-              TRUE ~ "No")
-            )
-        }
-        
-        # Make TS points size 0 if they have nighttime or non-exact images
-        # Change hover info dependent on point size (i.e. image status)
-        
-        d1 <- d1 %>%
-          mutate(PointSize = dplyr::case_when(
-            TimeofDay == "Night" ~ 0,
-            DTMatch == "No" ~ 0,
-            TRUE ~ 6),
-            # Text to display on the hover
-            # Needs to be its own column because case_when doesn't work within paste
-            Hover = case_when(PointSize == 0 & input$secondy != "None" ~
-                                paste("%{x}<br>",
-                                      "%{yaxis.title.text}: %{y}<br>",
-                                      "%{text}<br>",
-                                      "Non-target Image"),
-                              PointSize == 0 & input$secondy == "None" ~
-                                paste("%{x}<br>",
-                                      "%{yaxis.title.text}: %{y}<br>",
-                                      "Non-target Image"),
-                              PointSize != 0 & input$secondy != "None" ~
-                                paste("%{x}<br>",
-                                      "%{yaxis.title.text}: %{y}<br>",
-                                      "%{text}<br>",
-                                      "Target Image"),
-                              TRUE ~
-                                paste("%{x}<br>",
-                                      "%{yaxis.title.text}: %{y}<br>",
-                                      "Target Image"))
-          )
-        
+          dplyr::arrange(.data$Datetime)
         
         # Bind these to the compiled tibble
-        dat <- rbind(dat, d1)
+        dat1 <- rbind(dat1, d)
         
       }
+      
+      dat2 <- reactiveValues(data = { 
+        dat1
+      })
+      
+      
+      # Theoretically, this is supposed to allow the data table to be edited.
+      # Right now, it just throws mystery errors
+      
+      observe({
+        #get values
+        req(input$dattable_cell_edit)
+        
+        info <- input$dattable_cell_edit
+        editrow <- as.numeric(info$row)
+        editcol <- as.numeric(info$col)
+        editval <- as.numeric(info$value)
+        
+        #write values to reactive
+        dat2$data[editrow,editcol] <<- DT::coerceValue(editval, dat2$data[editrow,editcol])
+      })
+      
+      dat <- isolate(dat2$data)
+      
+      
+      ### Data-cleaning
+      
+      dat <- dat %>%
+        mutate(TimeofDay = "Day",
+               DTMatch = "Yes"
+        )
+      
+      
+      # Allow for only showing certain images
+      
+      if (input$dayonly == TRUE) {
+        dat <- dat %>%
+          dplyr::mutate(TimeofDay = dplyr::case_when(
+            SceneCaptureType == "Night" ~ "Night",
+            TRUE ~ "Day")
+          )
+      }
+      
+      if (input$matchonly == TRUE) {
+        dat <- dat %>%
+          dplyr::mutate(DTMatch = dplyr::case_when(
+            as.numeric(.data$Datetime) == as.numeric(.data$Image_Datetime) ~ "Yes",
+            TRUE ~ "No")
+          )
+      }
+      
+      # Make TS points size 0 if they have nighttime or non-exact images
+      # Change hover info dependent on point size (i.e. image status)
+      
+      dat <- dat %>%
+        mutate(PointSize = dplyr::case_when(
+          TimeofDay == "Night" ~ 0,
+          DTMatch == "No" ~ 0,
+          TRUE ~ 6),
+          
+          # Text to display on the hover
+          # Needs to be its own column because case_when doesn't work within paste
+          
+          Hover = case_when(PointSize == 0 & input$secondy != "None" ~
+                              paste("%{x}<br>",
+                                    "%{yaxis.title.text}: %{y}<br>",
+                                    "%{text}<br>",
+                                    "Non-target Image"),
+                            PointSize == 0 & input$secondy == "None" ~
+                              paste("%{x}<br>",
+                                    "%{yaxis.title.text}: %{y}<br>",
+                                    "Non-target Image"),
+                            PointSize != 0 & input$secondy != "None" ~
+                              paste("%{x}<br>",
+                                    "%{yaxis.title.text}: %{y}<br>",
+                                    "%{text}<br>",
+                                    "Target Image"),
+                            TRUE ~
+                              paste("%{x}<br>",
+                                    "%{yaxis.title.text}: %{y}<br>",
+                                    "Target Image"))
+        )
+      
+      
+      
       
       # Lets you highlight the click event
       hdat <- highlight_key(dat, ~Datetime)
@@ -346,6 +469,7 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
       
       
       # Make the main clickplot
+      
       plotly::plot_ly(
         hdat,
         x             = ~ Datetime,
@@ -387,6 +511,7 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
         ) %>%
         
         # Extra plot customization
+        
         plotly::layout(
           title = paste0("Time series for ", stringr::str_flatten(input$site, collapse = ", ")),
           xaxis = list(
@@ -409,7 +534,8 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
         ) %>%
         
         
-        # Changes the color of the clicked point
+        # Customize highlighting
+        
         plotly::highlight("plotly_click", off = "plotly_doubleclick",
                           color = toRGB("black"), opacityDim = 1,
                           selected = attrs_selected(showlegend = FALSE))
@@ -447,31 +573,30 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
       for (i in seq_along(input$site)) {
         
         # Find all files corresponding to that site
-        myImages <- stringr::str_c(inpath, input$site[i], 
-                                   list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
-                                   sep = "/" )
+        myFiles <- stringr::str_c(inpath, input$site[i], 
+                                  list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
+                                  sep = "/" )
         
-        # Find the csv file for the site
-        d <- myImages[stringr::str_ends(myImages, ".csv")]
         
         # Read in and clean up the data
-        d1 <- read.csv(d)
-        d1 <- d1 %>%
-          dplyr::mutate(Datetime = lubridate::ymd_hms(Datetime, 
+        
+        d <- read.csv(myFiles[stringr::str_ends(myFiles, ".csv")])
+        d <- d %>%
+          dplyr::mutate(Datetime = lubridate::ymd_hms(.data$Datetime, 
                                                       tz = tz),
-                        Image_Datetime = lubridate::ymd_hms(Image_Datetime, 
+                        Image_Datetime = lubridate::ymd_hms(.data$Image_Datetime, 
                                                             tz = tz),
                         TimeofDay = "Day",
                         DTMatch = "Yes",
-                        SibFolder = input$site[i]
+                        Folder = input$site[i]
           ) %>%
-          dplyr::arrange(Datetime)
+          dplyr::arrange(.data$Datetime)
         
         
         # Allow for only showing certain images
         
         if (input$dayonly == TRUE) {
-          d1 <- d1 %>%
+          d <- d %>%
             dplyr::mutate(TimeofDay = dplyr::case_when(
               SceneCaptureType == "Night" ~ "Night",
               TRUE ~ "Day")
@@ -479,24 +604,24 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
         }
         
         if (input$matchonly == TRUE) {
-          d1 <- d1 %>%
+          d <- d %>%
             dplyr::mutate(DTMatch = dplyr::case_when(
-              as.numeric(Datetime) == as.numeric(Image_Datetime) ~ "Yes",
+              as.numeric(.data$Datetime) == as.numeric(.data$Image_Datetime) ~ "Yes",
               TRUE ~ "No")
             )
         }
         
         
         # Bind site data to the compiled tibble
-        dat <- rbind(dat, d1)
+        dat <- rbind(dat, d)
         
       }
       
       
       # Filter out all data except the clicked point
       dat <- dat %>%
-        dplyr::filter(Datetime == click_event()$x & 
-                        UserLabel == click_event()$customdata)
+        dplyr::filter(.data$Datetime == click_event()$x & 
+                        .data$UserLabel == click_event()$customdata)
       
       
       # Allow primary y axis variables to be a user input
@@ -527,7 +652,7 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
       
       
       # Write the datetime, site name, primary y-axis value, 
-      # secondary y-axis value, and image file name in sidebar
+      # secondary y-axis value, and image file name under image
       
       # Datetime
       output$text1 <- renderText(
@@ -562,7 +687,7 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
       )
       
       
-      # Draw the corresponding image in the sidebar
+      # Render the corresponding image in the sidebar
       # Change to renderPlot with rasterGrob to display multiple images
       
       # Nighttime image
@@ -579,13 +704,13 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
         output$text5 <- renderText(
           stringr::str_glue("File Name: ",
                             as.character(dat$FileName),
-                            " (not exact image)", sep = " ")
+                            " (non-exact image)", sep = " ")
         )
         # Anything else
       } else {
         output$image <- renderImage({
           filename <- normalizePath(file.path(
-            stringr::str_c(inpath, dat$SibFolder, dat$FileName, sep = "/")))
+            stringr::str_c(inpath, dat$Folder, dat$FileName, sep = "/")))
           list(src = filename,
                width  = session$clientData$output_image_width,
                height = session$clientData$output_image_height)},
@@ -615,9 +740,10 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
     
     
     
+    
     ############ Render plot of image occurrence #################### 
     
-    output$densplot <- renderPlot({
+    output$densplot <- renderPlotly({
       
       req(input$fdir)
       
@@ -631,39 +757,60 @@ TS_launch_app <- function(main_y = c("Stream Stage (m)" = "Stage"),
       for (i in seq_along(input$site)) {
         
         # Find files corresponding to a site
-        myImages <- stringr::str_c(inpath, input$site[i], 
-                                   list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
-                                   sep = "/" )
-        
-        # Find csv file in wd
-        d <- myImages[stringr::str_ends(myImages, ".csv")]
+        myFiles <- stringr::str_c(inpath, input$site[i], 
+                                  list.files(stringr::str_c(inpath, input$site[i], sep = "/")), 
+                                  sep = "/" )
         
         
         # Read in and append data to tibble
-        d1 <- read.csv(d)
-        dat <- rbind(dat, d1)
+        d <- read.csv(myFiles[stringr::str_ends(myFiles, ".csv")])
+        dat <- rbind(dat, d)
         
       }
       
       # Summarize image data
+      
       dat <- dat %>%
-        dplyr::select('FileName', 'UserLabel', 'Image_Datetime') %>%
+        dplyr::select(FileName, UserLabel, Image_Datetime) %>%
         dplyr::distinct() %>%
-        dplyr::mutate(Datetime = ymd_hms(Image_Datetime),
-                      Date = as_date(Datetime),
-                      Hour = hour(Datetime)
+        dplyr::mutate(Datetime = ymd_hms(.data$Image_Datetime),
+                      Date = as_date(.data$Datetime),
+                      Hour = hour(.data$Datetime)
         ) %>%
-        dplyr::group_by(Date, Hour) %>%
+        dplyr::group_by(.data$Date, .data$Hour) %>%
         dplyr::count()
       
+      dat1 <- expand.grid(Date = unique(dat$Date),
+                          Hour = c(0:23))
+      
+      dat2 <- full_join(dat1, dat, by = c("Date", "Hour"))
+      
+      dat2[is.na(dat2)] <- 0
+      
+      
       # Plot image data as geom_tiles
-      ggplot2::ggplot(dat) +
-        ggplot2::geom_tile(ggplot2::aes(x = Date, y = Hour, fill = n)) +
-        ggplot2::ylim(0,24) +
-        ggplot2::scale_fill_gradient(name = "# of\nImages") +
-        ggplot2::theme_minimal()
+      # p <- ggplot2::ggplot(dat) +
+      #   ggplot2::geom_tile(ggplot2::aes(x = Date, y = Hour, fill = n)) +
+      #   ggplot2::ylim(0,24) +
+      #   ggplot2::scale_fill_gradient(name = "# of\nImages") +
+      #   ggplot2::theme_minimal()
+      
+      plotly::plot_ly(
+        dat2,
+        x             = ~ Date,
+        y             = ~ Hour,
+        z             = ~ n,
+        text          = ~ n,
+        colors        = "Greys",
+        type          = 'heatmap',
+        hovertemplate = paste("%{x}<br>",
+                              "Hour of Day: %{y}<br>",
+                              "# Images: %{text}<extra></extra>")
+      )
+      
       
     }) # End of densplot renderPlotly
+    
     
     
   } # end of server
