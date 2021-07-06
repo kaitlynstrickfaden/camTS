@@ -12,4 +12,6 @@ devtools::install_github("kaitlynstrickfaden/camTS")
 
 <br>
 
-![screengrab](/CamTS_Screengrab.jpg?raw = TRUE "CamTS Screengrab") 
+<p>
+    <img src="CamTS_Screengrab.jpg" width="600" height="400" />
+</p>
