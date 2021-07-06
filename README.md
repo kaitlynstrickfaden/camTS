@@ -10,4 +10,6 @@ To download the package, run the following code:
 devtools::install_github("kaitlynstrickfaden/camTS")
 ```
 
-![screengrab](CamTS_screengrab.jpg) 
+<br>
+
+![screengrab](CamTS_screengrab.jpg?raw = TRUE "CamTS Screengrab") 
