@@ -12,4 +12,4 @@ devtools::install_github("kaitlynstrickfaden/camTS")
 
 <br>
 
-![screengrab](/CamTS_screengrab.jpg?raw = TRUE "CamTS Screengrab") 
+![screengrab](/CamTS_Screengrab.jpg?raw = TRUE "CamTS Screengrab") 
