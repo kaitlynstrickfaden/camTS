@@ -13,5 +13,5 @@ devtools::install_github("kaitlynstrickfaden/camTS")
 <br>
 
 <p>
-    <img src="CamTS_Screengrab.jpg" width="1000" height="700" />
+    <img src="CamTS_Screengrab.jpg" width="1000" height="550" />
 </p>
